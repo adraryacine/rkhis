@@ -1,22 +1,136 @@
-import React from 'react';
-import {
+// screens/HotelReservationScreen.js
+import React, { useState, useEffect } from 'react'; // Keep useState and useEffect
+import { // Keep other imports
   View,
   Text,
   StyleSheet,
-  FlatList, // Besoin de FlatList
+  FlatList,
   TouchableOpacity,
   Image,
   Dimensions,
-  StatusBar
+  StatusBar,
+  ActivityIndicator, // Added for loading
+  Alert, // Added for errors
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons'; // Pour l'icône étoile
-import { useNavigation } from '@react-navigation/native'; // Utile si tu veux naviguer depuis un item
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native'; // useRoute to get params
+import { useColorScheme } from 'react-native'; // For theming
+import { getRecommendedHotels } from '../services/dataService'; // Import data service function
+
 
 const { width: screenWidth } = Dimensions.get('window');
+const SPACING = 15;
+
+// Helper function to get consistent themed colors
+const getThemedColors = (isDarkMode) => ({
+    background: isDarkMode ? '#1C1C1E' : '#F8F9FA',
+    card: isDarkMode ? '#2C2C2E' : '#FFFFFF',
+    text: isDarkMode ? '#FFFFFF' : '#1A1A1A',
+    secondaryText: isDarkMode ? '#8E8E93' : '#757575',
+    accent: isDarkMode ? '#0A84FF' : '#007AFF',
+    primaryGreen: isDarkMode ? '#4CAF50' : '#00796B',
+    primaryBlue: isDarkMode ? '#2196F3' : '#01579B',
+    primaryOrange: isDarkMode ? '#FF9800' : '#BF360C',
+    primaryRed: isDarkMode ? '#FF453A' : '#D32F2F',
+    border: isDarkMode ? '#38383A' : '#E0E0E0',
+});
+
+// Helper function to get themed styles
+const getThemedHotelReservationStyles = (colors) => StyleSheet.create({
+  screenContainer: { // Style principal pour l'écran
+    flex: 1,
+    backgroundColor: colors.background, // Themed background
+  },
+  listContentContainer: { // Style pour le contenu de la FlatList
+    paddingVertical: SPACING,
+    paddingHorizontal: SPACING,
+  },
+  cardContainer: { // Style pour chaque carte d'hôtel
+    backgroundColor: colors.card, // Themed card background
+    borderRadius: SPACING,
+    marginBottom: SPACING,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  hotelImage: { // Style pour l'image de l'hôtel
+    width: screenWidth * 0.3, // Responsive width
+    height: '100%',
+    minHeight: SPACING * 8, // Minimum height
+  },
+  infoContainer: { // Style pour la partie droite avec les infos
+    flex: 1,
+    paddingVertical: SPACING * 1.2,
+    paddingHorizontal: SPACING * 1.2,
+    justifyContent: 'center',
+  },
+  hotelName: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: colors.text, // Themed text
+    marginBottom: SPACING * 0.4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: SPACING * 0.6,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+   iconSpacing: {
+     marginRight: SPACING * 0.3,
+   },
+  hotelRating: {
+    fontSize: 15,
+    color: colors.secondaryText, // Themed secondary text
+    fontWeight: '500',
+  },
+  hotelPrice: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.primaryGreen, // Themed price color
+  },
+  hotelAmenities: {
+    fontSize: 13,
+    color: colors.secondaryText, // Themed secondary text
+    marginTop: SPACING * 0.3,
+    opacity: 0.8,
+  },
+  centered: { // Style for loading/empty state
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+  },
+   loadingText: {
+        marginTop: SPACING,
+        fontSize: 16,
+        color: colors.secondaryText,
+   },
+    emptyText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: colors.secondaryText,
+        textAlign: 'center',
+        marginBottom: SPACING * 0.5,
+    },
+    emptySubText: {
+        fontSize: 14,
+        color: colors.secondaryText,
+        textAlign: 'center',
+    },
+});
 
 // Composant pour afficher une entrée d'hôtel dans la liste
 // Tu peux le mettre ici ou l'importer s'il est dans un autre fichier
-const HotelListItem = ({ item, onPress }) => (
+const HotelListItem = React.memo(({ item, onPress, colors, styles }) => (
   <TouchableOpacity
     style={styles.cardContainer}
     onPress={onPress}
@@ -24,7 +138,7 @@ const HotelListItem = ({ item, onPress }) => (
     accessibilityLabel={`View details for ${item.name}`}
   >
     <Image
-      source={item.image} // Utilise directement l'image passée
+      source={{ uri: item.image }} // Use URI from data
       style={styles.hotelImage}
       resizeMode="cover"
     />
@@ -33,66 +147,105 @@ const HotelListItem = ({ item, onPress }) => (
       <View style={styles.detailRow}>
         <View style={styles.ratingContainer}>
           <Ionicons name="star" size={16} color="#FFC107" style={styles.iconSpacing}/>
-          <Text style={styles.hotelRating}>{item.rating}</Text>
+          <Text style={styles.hotelRating}>{item.rating || 'N/A'}</Text>
         </View>
-        <Text style={styles.hotelPrice}>{item.price}/night</Text>
+        {item.price && <Text style={styles.hotelPrice}>{item.price}/night</Text>}
       </View>
-      {item.amenities && (
+      {item.amenities && Array.isArray(item.amenities) && item.amenities.length > 0 && (
         <Text style={styles.hotelAmenities} numberOfLines={1}>
           {item.amenities.join(' • ')}
         </Text>
       )}
     </View>
   </TouchableOpacity>
-);
+));
 
-// Garde le nom de ta fonction/composant principal
-function HotelReservationScreen({ route }) { // Important : Ajouter { route } pour recevoir les données
+function HotelReservationScreen() { // Keep the original function name
   const navigation = useNavigation();
+  const route = useRoute(); // Use useRoute hook
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+  const colors = getThemedColors(isDarkMode);
+  const styles = getThemedHotelReservationStyles(colors);
 
-  // Récupérer les données des hôtels passées depuis HomeScreen
-  console.log("HotelReservationScreen: route.params:", route.params); // Log pour vérifier
-  const params = route.params || {}; // Sécurité
-  const { hotels } = params; // Extrait 'hotels' (doit correspondre à ce que HomeScreen envoie)
-  console.log("HotelReservationScreen: Données extraites (hotels):", hotels); // Log pour vérifier
+  const [hotels, setHotels] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fonction pour gérer le clic sur un hôtel (pour une future page de détail)
+  // Get initial hotels data from route params if available
+  const initialHotels = route.params?.hotels;
+
+  useEffect(() => {
+      const fetchHotels = async () => {
+          setIsLoading(true);
+          try {
+              // If hotels data was passed via route params, use that directly
+              if (initialHotels && Array.isArray(initialHotels)) {
+                  console.log(`Using ${initialHotels.length} hotels from route params.`);
+                  setHotels(initialHotels);
+              } else {
+                   // Otherwise, fetch from data service (which uses mock data)
+                   console.log("No initial hotels in params, fetching from data service...");
+                   const fetchedHotels = await getRecommendedHotels();
+                   setHotels(fetchedHotels);
+                   console.log(`Fetched ${fetchedHotels.length} hotels from data service.`);
+              }
+          } catch (error) {
+              console.error("Failed to fetch hotels:", error);
+              Alert.alert("Error", "Could not load hotels.");
+              setHotels([]); // Clear list on error
+          } finally {
+              setIsLoading(false);
+          }
+      };
+
+      fetchHotels();
+  }, [initialHotels]); // Re-fetch if initialHotels param changes
+
+  // Function to handle clicking on an hotel item
   const handleHotelPress = (hotel) => {
-    console.log('Navigate to details for:', hotel.name);
-    // Potentiellement, naviguer vers un VRAI écran de réservation/détail plus tard
-    // navigation.navigate('HotelDetail', { hotelId: hotel.id });
+    console.log('Navigate to details for hotel:', hotel.name);
+    // Navigate to the Hotel Detail screen, passing the hotel data
+    navigation.navigate('HotelDetail', { hotelId: hotel.id, hotel: hotel });
   };
 
   const renderHotelItem = ({ item }) => (
     <HotelListItem
       item={item}
       onPress={() => handleHotelPress(item)}
+      colors={colors} // Pass colors and styles to the list item
+      styles={styles}
     />
   );
 
-  // Vérifie si 'hotels' est un tableau valide
-  if (!Array.isArray(hotels) || hotels.length === 0) {
-    console.log("HotelReservationScreen: Affichage 'No hotels found'.");
+  // --- Loading State ---
+  if (isLoading) {
     return (
       <View style={styles.centered}>
-        <Text>No hotels found.</Text>
-        {/* Messages de débogage utiles */}
-        {!route.params && <Text style={{marginTop: 5, color: 'grey'}}>(Params non reçus)</Text>}
-        {route.params && (!Array.isArray(hotels) || hotels.length === 0) && <Text style={{marginTop: 5, color: 'grey'}}>(Liste d'hôtels vide ou invalide)</Text>}
+        <ActivityIndicator size="large" color={colors.accent} />
+        <Text style={styles.loadingText}>Loading Hotels...</Text>
       </View>
     );
   }
 
-  // Si on arrive ici, on a des hôtels à afficher
-  console.log(`HotelReservationScreen: Rendu de la FlatList avec ${hotels.length} hôtels.`);
+  // --- Empty State ---
+  if (!hotels || hotels.length === 0) {
+    return (
+      <View style={styles.centered}>
+         <Ionicons name="bed-outline" size={60} color={colors.secondaryText} style={{marginBottom: SPACING}}/>
+        <Text style={styles.emptyText}>No hotels found.</Text>
+         <Text style={styles.emptySubText}>Check back later or try a different search.</Text>
+      </View>
+    );
+  }
+
+  // --- Display the List ---
   return (
-    // Remplace l'ancienne View par celle-ci qui contient la FlatList
     <View style={styles.screenContainer}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       <FlatList
         data={hotels}
         renderItem={renderHotelItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.id} // Use item.id as key
         contentContainerStyle={styles.listContentContainer}
         showsVerticalScrollIndicator={false}
       />
@@ -100,79 +253,4 @@ function HotelReservationScreen({ route }) { // Important : Ajouter { route } po
   );
 }
 
-// Garde les styles nécessaires (ceux de l'exemple précédent pour la liste)
-const styles = StyleSheet.create({
-  screenContainer: { // Style principal pour l'écran
-    flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  listContentContainer: { // Style pour le contenu de la FlatList
-    paddingVertical: 20,
-    paddingHorizontal: 15,
-  },
-  cardContainer: { // Style pour chaque carte d'hôtel
-    backgroundColor: '#FFFFFF',
-    borderRadius: 15,
-    marginBottom: 20,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    shadowColor: '#546E7A',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  hotelImage: { // Style pour l'image de l'hôtel
-    width: 110,
-    height: '100%',
-    minHeight: 110,
-  },
-  infoContainer: { // Style pour la partie droite avec les infos
-    flex: 1,
-    paddingVertical: 15,
-    paddingHorizontal: 18,
-    justifyContent: 'center',
-  },
-  hotelName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-   iconSpacing: {
-     marginRight: 4,
-   },
-  hotelRating: {
-    fontSize: 15,
-    color: '#444',
-    fontWeight: '500',
-  },
-  hotelPrice: {
-    fontSize: 15,
-    fontWeight: 'bold',
-    color: '#00796B',
-  },
-  hotelAmenities: {
-    fontSize: 13,
-    color: '#607D8B',
-    marginTop: 4,
-  },
-  centered: { // Garde ce style pour le cas "No hotels found"
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-
-// Garde l'export de ton composant
-export default HotelReservationScreen;
+export default HotelReservationScreen; 

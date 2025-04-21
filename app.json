@@ -24,7 +24,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#FFFFFF"
       },
-      "package": "com.yourusername.bejaiatourismapp"  // Replace with your package name
+      "package": "com.yourusername.bejaiatourismapp"  
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -36,6 +36,19 @@
           "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
         }
       ]
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "tsconfigPaths": true
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "owner": "your-username",
+    "scheme": "your-app-scheme",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true
   }
 }
