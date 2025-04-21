@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useContext, createContext } from 'react';
 import {
   View,
   Text,
@@ -6,1235 +6,1427 @@ import {
   Image,
   TextInput,
   TouchableOpacity,
-  FlatList,
   Dimensions,
   Platform,
   Linking,
   ImageBackground,
   StatusBar,
-  ActivityIndicator,
-  ScrollView, // Use ScrollView for vertical scrolling
-  RefreshControl, // Added for pull-to-refresh
-  Alert, // Added for placeholders
+  ActivityIndicator, // Keep ActivityIndicator
+  ScrollView,
+  RefreshControl,
+  Alert,
+  Pressable,
+  useColorScheme, // Keep useColorScheme
+  FlatList // Keep FlatList
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons'; // Keep Ionicons
+import { LinearGradient } from 'expo-linear-gradient'; // Keep LinearGradient
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   useAnimatedScrollHandler,
   interpolate,
   Extrapolate,
-  withTiming,
-  withDelay,
-  FadeIn, // Added for entry animations
-  SlideInLeft, // Added for entry animations
-  withSpring, // Added for card press animation
-} from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native'; // Added for navigation
+  withSpring,
+  FadeIn,
+  SlideInLeft,
+  ZoomIn,
+} from 'react-native-reanimated'; // Keep Reanimated
+import { useNavigation } from '@react-navigation/native'; // Keep Navigation
+// import LottieView from 'lottie-react-native'; // No longer needed, commented out
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Keep AsyncStorage
 
-// Import data fetching functions
-import {
-    getFeaturedDestinations,
-    getUpcomingEvents,
-    getTopRatedRestaurants,
-    getRecommendedHotels,
-    getPopularAttractions,
-    // getUserProfile, // Use from AuthContext instead
-} from '../services/dataService'; // Ensure path is correct
+// --- Placeholder Colors (Moved here, remove import) ---
+const Colors = {
+  light: {
+    text: '#111827',
+    background: '#ffffff',
+    tint: '#007AFF', // Example iOS blue
+    secondary: '#6b7280',
+    border: '#e5e7eb',
+    cardBackground: '#ffffff',
+    placeholder: '#9ca3af',
+    success: '#10b981',
+    danger: '#ef4444',
+    black: '#000000',
+  },
+  dark: {
+    text: '#ecf0f1',
+    background: '#121212',
+    tint: '#0A84FF', // Example iOS blue dark
+    secondary: '#a1a1aa',
+    border: '#374151',
+    cardBackground: '#1e1e1e',
+    placeholder: '#71717a',
+    success: '#34d399',
+    danger: '#f87171',
+    black: '#000000', // Black is still black
+  },
+  white: '#ffffff', // Keep white accessible easily
+};
 
-import { useAuth } from '../contexts/AuthContext'; // Import useAuth
+// --- Placeholder Auth Context (Moved here, remove import) ---
+const AuthContext = createContext(null);
 
-// Import theme hook
-import { useColorScheme } from 'react-native'; // For theming
+// Example Hook - Provides mock data
+export const useAuth = () => {
+    // Simulate auth state
+    const [currentUser] = useState({ id: '123', email: 'user@example.com' }); // Assume logged in
+    const [userData] = useState({ fullName: 'Bejaia Explorer', preferences: {} }); // Mock user data
+    const [isLoadingAuth] = useState(false); // Assume auth check is complete
+
+    return { currentUser, userData, isLoadingAuth };
+};
+
+// Example Provider (Not strictly needed for this single screen, but good practice)
+export const AuthProvider = ({ children }) => {
+  const authValue = useAuth(); // Use the hook to get the mock values
+  return (
+    <AuthContext.Provider value={authValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+
+// --- Mock Data (abridged for brevity) ---
+// NOTE: In a real app, data fetching functions would handle this.
+const initialMockData = {
+  featuredDestinations: [
+    { id: 'dest1', name: 'Bejaia City Exploration', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg/1280px-Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg', description: 'Historic port & vibrant center', tags: ['city', 'culture'] },
+    { id: 'dest2', name: 'Aokas Golden Sands', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Plage_d%27Aokas.jpg/1280px-Plage_d%27Aokas.jpg', description: 'Relax on the stunning coastline' },
+  ],
+  upcomingEvents: [
+    { id: 'event1', name: 'Festival International de Théâtre', date: 'Oct 2024', location: 'Theatre Regional', image: 'https://via.placeholder.com/160x110/8A2BE2/FFFFFF?text=Theatre+Fest' },
+  ],
+  topRatedRestaurants: [
+    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg', priceRange: '$$$' },
+  ],
+  recommendedHotels: [
+    { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '~$140', rating: 4.7, image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0d/hotel-exterior.jpg?w=1200&h=-1&s=1', amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860 },
+  ],
+  popularAttractions: [
+    { id: 'attr1', name: 'Gouraya Park', description: 'Nature & Views', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg/1024px-Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD' },
+    { id: 'attr2', name: 'Cap Carbon Lighthouse', description: 'Panoramic Coastal Views', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/99/Cap_Carbon_%28B%C3%A9ja%C3%AFa%29_-_Alg%C3%A9rie.jpg/1280px-Cap_Carbon_%28B%C3%A9ja%C3%AFa%29_-_Alg%C3%A9rie.jpg', latitude: 36.785, longitude: 5.105 },
+  ],
+  localCulture: [
+    { id: 'cult1', title: 'Kabyle Heritage', description: 'Explore the unique Berber traditions, language (Taqbaylit), and vibrant music of the region.' },
+    { id: 'cult2', title: 'Local Crafts', description: 'Discover traditional pottery, jewelry, and textiles in local markets.' },
+  ],
+  historicalSites: [
+    { id: 'hist1', name: 'Casbah of Bejaia', description: 'Wander the narrow streets of the ancient fortified city.', latitude: 36.7580, longitude: 5.0880 },
+    { id: 'hist2', name: 'Bab El Fouka Gate', description: 'Historic gate marking an entrance to the old city.', latitude: 36.7565, longitude: 5.0875 },
+  ],
+  beachesCoastal: [
+    { id: 'beach1', name: 'Les Aiguades', description: 'Known for clear turquoise water, dramatic cliffs, and snorkeling.', latitude: 36.7700, longitude: 5.1400 },
+    { id: 'beach2', name: 'Sakamody Beach', description: 'Popular spot with restaurants and water activities.', latitude: 36.7505, longitude: 5.0600 },
+  ],
+  outdoorActivities: [
+    { id: 'out1', name: 'Hiking', icon: 'walk-outline' },
+    { id: 'out2', name: 'Snorkeling', icon: 'water-outline' },
+    { id: 'out3', name: 'Photography', icon: 'camera-outline' },
+  ],
+  transportationInfo: [
+    { id: 'trans1', type: 'City Buses (ETUB)', details: 'Affordable network, check routes beforehand.', icon: 'bus-outline' },
+    { id: 'trans2', type: 'Taxis', details: 'Readily available, agree on fare before starting.', icon: 'car-sport-outline' },
+  ],
+  emergencyContacts: [
+    { id: 'police', name: 'Police', number: '17', icon: 'shield-checkmark-outline' },
+    { id: 'ambulance', name: 'Ambulance (SAMU)', number: '14', icon: 'medkit-outline' },
+    { id: 'fire', name: 'Civil Protection (Fire)', number: '1021', icon: 'flame-outline' },
+  ],
+};
+
+// --- Placeholder Data Fetching Functions (Moved here, remove import) ---
+const MOCK_DELAY = 500; // Simulate network latency
+
+const getFeaturedDestinations = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.featuredDestinations), MOCK_DELAY));
+const getUpcomingEvents = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.upcomingEvents), MOCK_DELAY + 100));
+const getTopRatedRestaurants = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.topRatedRestaurants), MOCK_DELAY + 200));
+const getRecommendedHotels = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.recommendedHotels), MOCK_DELAY + 300));
+const getPopularAttractions = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.popularAttractions), MOCK_DELAY + 400));
 
 
 // --- Constants & Utils ---
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-const HEADER_MAX_HEIGHT = screenHeight * (screenWidth > 500 ? 0.3 : 0.38); // Adjust header height for wider screens
-const HEADER_MIN_HEIGHT = Platform.OS === 'ios' ? 115 : 105;
+const HEADER_MAX_HEIGHT = screenHeight * (screenWidth > 500 ? 0.35 : 0.4);
+const HEADER_MIN_HEIGHT = Platform.OS === 'ios' ? 120 : 110;
 const HEADER_SCROLL_DISTANCE = HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT;
-const SPACING = 15; // Consistent spacing unit
-
-// --- Image URLs (Use these as fallbacks if data fetching fails, or just for mock) ---
-const headerImageUrl = 'https://images.unsplash.com/photo-1593468663047-3a188a3bc489?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D';
-const bejaiaCityImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg/1280px-Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg';
-const aokasBeachImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Plage_d%27Aokas.jpg/1280px-Plage_d%27Aokas.jpg';
-const tichyCornicheImageUrl = 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/29/25/63/hotel-les-hammadites.jpg?w=1200&h=-1&s=1';
-const capCarbonImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Phare_du_Cap_Carbon.jpg/1024px-Phare_du_Cap_Carbon.jpg';
-const gourayaImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg/1024px-Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg';
-const monkeyPeakImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Barbary_macaque_on_Monkey_Mountain.jpg/1024px-Barbary_macaque_on_Monkey_Mountain.jpg';
-const placeNovImageUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Place_du_1er_Novembre_Bejaia.jpg/1024px-Place_du_1er_Novembre_Bejaia.jpg';
-const briseDeMerImageUrl = 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/08/92/d5/83/plage-de-boulimat.jpg?w=1200&h=-1&s=1';
-const casbahImageUrl = 'https://live.staticflickr.com/65535/51260998338_a1974185c1_b.jpg';
-const restaurant1ImageUrl = 'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg';
-const restaurant2ImageUrl = 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg';
-const restaurant3ImageUrl = 'https://media-cdn.tripadvisor.com/media/photo-s/13/6c/a4/95/la-voile-d-or.jpg';
-const restaurant4ImageUrl = 'https://media-cdn.tripadvisor.com/media/photo-f/05/e3/7e/5a/pizzeria-venezia.jpg';
-const hotel1ImageUrl = 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0d/hotel-exterior.jpg?w=1200&h=-1&s=1';
-const hotel2ImageUrl = 'https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/296065364.jpg?k=f8b5c3e0b2a2a625f1a6d6a17907c6a1e2c4c4a5a4f3a1c6f9e7b8d0a6b1c3d4&o=';
-const hotel3ImageUrl = 'https://le-cristal-hotel-bejaia.booked.net/data/Photos/OriginalPhoto/11874/1187419/1187419507/Le-Cristal-Hotel-Bejaia-Exterior.JPEG';
-const event1ImageUrl = 'https://via.placeholder.com/160x110/8A2BE2/FFFFFF?text=Theatre+Fest';
-const event2ImageUrl = 'https://via.placeholder.com/160x110/DEB887/FFFFFF?text=Artisan+Fair';
-const event3ImageUrl = 'https://via.placeholder.com/160x110/5F9EA0/FFFFFF?text=Music+Night';
-const event4ImageUrl = 'https://via.placeholder.com/160x110/228B22/FFFFFF?text=Olive+Harvest';
-
-// --- Placeholder Data (Structured to match potential API calls) ---
-// This structure mirrors the fetching functions in dataService.js
-// This is used as a fallback or initial structure if Firestore is empty
-const initialMockData = {
-  featuredDestinations: [
-    { id: 'dest1', name: 'Bejaia City Exploration', image: bejaiaCityImageUrl, description: 'Historic port & vibrant center' },
-    { id: 'dest2', name: 'Aokas Golden Sands', image: aokasBeachImageUrl, description: 'Relax on the stunning coastline' },
-    { id: 'dest3', name: 'Tichy Seaside Promenade', image: tichyCornicheImageUrl, description: 'Enjoy cafes and sea views' },
-    { id: 'dest4', name: 'Majestic Cap Carbon', image: capCarbonImageUrl, description: 'Iconic lighthouse & panoramas' },
-  ],
-  upcomingEvents: [
-    { id: 'event1', name: 'Festival International de Théâtre', date: 'Oct 2024', location: 'Theatre Regional', image: event1ImageUrl },
-    { id: 'event2', name: 'Artisan Fair - Aokas', date: 'Sept 15-17, 2024', location: 'Aokas Corniche', image: event2ImageUrl },
-    { id: 'event3', name: 'Andalusian Music Evening', date: 'Sept 22, 2024', location: 'Maison de la Culture', image: event3ImageUrl },
-    { id: 'event4', name: 'Olive Harvest Celebration', date: 'Nov 2024', location: 'Nearby Villages', image: event4ImageUrl },
-  ],
-  topRatedRestaurants: [
-    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: restaurant1ImageUrl, priceRange: '$$$' },
-    { id: 'rest2', name: 'Restaurant El Djenina', rating: 4.6, cuisine: 'Algerian, Grills', image: restaurant2ImageUrl, priceRange: '$$' },
-    { id: 'rest3', name: 'La Voile d\'Or', rating: 4.5, cuisine: 'Italian, Pizza', image: restaurant3ImageUrl, priceRange: '$$' },
-    { id: 'rest4', name: 'Pizzeria Venezia', rating: 4.4, cuisine: 'Pizza, Fast Food', image: restaurant4ImageUrl, priceRange: '$' },
-  ],
-  recommendedHotels: [
-    { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '~$140', rating: 4.7, image: hotel1ImageUrl, amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860 },
-    { id: 'hotel2', name: 'Hotel Zedek', price: '~$110', rating: 4.3, image: hotel2ImageUrl, amenities: ['Restaurant', 'Free WiFi'], latitude: 36.7510, longitude: 5.0870 },
-    { id: 'hotel3', name: 'Le Cristal Hotel', price: '~$130', rating: 4.5, image: hotel3ImageUrl, amenities: ['Beachfront', 'Restaurant'], latitude: 36.7500, longitude: 5.0840 },
-    { id: 'hotel4', name: 'Hotel Les Hammadites (Tichy)', price: '~$160', rating: 4.6, image: tichyCornicheImageUrl, amenities: ['Private Beach', 'Pool', 'Tennis'], latitude: 36.7650, longitude: 5.1200 },
-  ],
-  popularAttractions: [
-    { id: 'attr1', name: 'Gouraya Park', description: 'Nature & Views', image: gourayaImageUrl, latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD' },
-    { id: 'attr2', name: 'Monkey Peak', description: 'Wildlife Encounter', image: monkeyPeakImageUrl, latitude: 36.7680, longitude: 5.0920, openingHours: 'Always Open', entranceFee: 'Free' },
-    { id: 'attr3', name: '1er Novembre Sq.', description: 'City Heart', image: placeNovImageUrl, latitude: 36.7550, longitude: 5.0850, openingHours: 'Always Open', entranceFee: 'Free' },
-    { id: 'attr4', name: 'Brise de Mer', description: 'City Beach', image: briseDeMerImageUrl, latitude: 36.7570, longitude: 5.0800, openingHours: 'Always Open', entranceFee: 'Free' },
-    { id: 'attr5', name: 'Casbah', description: 'Old City Charm', image: casbahImageUrl, latitude: 36.7580, longitude: 5.0880, openingHours: 'Always Open', entranceFee: 'Free' },
-    { id: 'attr6', name: 'Cap Carbon', description: 'Lighthouse Views', image: capCarbonImageUrl, latitude: 36.7750, longitude: 5.0950, openingHours: 'Usually Daytime', entranceFee: 'Small fee for lighthouse' },
-  ],
-  localCulture: [
-    { id: 'cult1', title: 'Kabyle Heritage', description: 'Explore the unique Berber traditions, language (Taqbaylit), and vibrant music of the region.' },
-    { id: 'cult2', title: 'Andalusian Influence', description: 'Discover the historical connection reflected in architecture, music, and cuisine.' },
-    { id: 'cult3', title: 'Local Festivals & Moussems', description: 'Experience vibrant seasonal celebrations and traditional gatherings.' },
-  ],
-  historicalSites: [
-    { id: 'hist1', name: 'Casbah of Bejaia', description: 'Wander the narrow streets of the ancient fortified city.', latitude: 36.7580, longitude: 5.0880 },
-    { id: 'hist2', name: 'Bab El Bahr (Sea Gate)', description: 'Historic gate offering sea views and photo opportunities.', latitude: 36.7565, longitude: 5.0845 },
-    { id: 'hist3', name: 'Fort Gouraya', description: 'Remnants of a Spanish fort with breathtaking city panoramas.', latitude: 36.7610, longitude: 5.0910 },
-    { id: 'hist4', name: 'Fibonacci Plaque', description: 'Commemorating Leonardo Fibonacci\'s influential time in Bejaia.', latitude: 36.7555, longitude: 5.0855 },
-  ],
-  beachesCoastal: [
-    { id: 'beach1', name: 'Les Aiguades', description: 'Known for clear turquoise water, dramatic cliffs, and snorkeling.', latitude: 36.7700, longitude: 5.1400 },
-    { id: 'beach2', name: 'Sakamody Beach', description: 'A more secluded cove ideal for relaxation and quiet swims.', latitude: 36.7800, longitude: 5.1500 },
-    { id: 'beach3', name: 'Boulimat Beach', description: 'Popular family-friendly beach west of Bejaia with amenities.', latitude: 36.7900, longitude: 5.1600 },
-  ],
-  outdoorActivities: [
-    { id: 'out1', name: 'Hiking', icon: 'walk-outline' },
-    { id: 'out2', name: 'Swimming', icon: 'water-outline' },
-    { id: 'out3', name: 'Snorkeling', icon: 'glasses-outline' },
-    { id: 'out4', name: 'Photography', icon: 'camera-outline' },
-    { id: 'out5', name: 'Bird Watching', icon: 'search-circle-outline'},
-  ],
-  transportationInfo: [
-    { id: 'trans1', type: 'City Buses (ETUB)', details: 'Affordable network, check routes beforehand.', icon: 'bus-outline' },
-    { id: 'trans2', type: 'Taxis (Petit & Grand)', details: 'Plentiful, agree on fares, especially for longer trips.', icon: 'car-sport-outline' },
-    { id: 'trans3', type: 'Airport (BJA)', details: 'Soummam–Abane Ramdane Airport, taxis available.', icon: 'airplane-outline' },
-    { id: 'trans4', name: 'Port Connections', details: 'Check ferry schedules for national/international routes.', icon: 'boat-outline' },
-  ],
-  emergencyContacts: [
-    { id: 'police', name: 'Police', number: '17', icon: 'shield-checkmark-outline' },
-    { id: 'ambulance', name: 'SAMU', number: '14', icon: 'pulse-outline' },
-    { id: 'fire', name: 'Protection Civile', number: '14', icon: 'flame-outline' },
-    { id: 'hospital', name: 'CHU Bejaia', number: '034xxxxxx', icon: 'git-network-outline' },
-  ],
+const SPACING = 16;
+const CARD_SHADOW = {
+  shadowColor: Colors.light.black, // Default light mode shadow
+  shadowOffset: { width: 0, height: 4 },
+  shadowOpacity: 0.15,
+  shadowRadius: 8,
+  elevation: 4,
 };
 
-
-// Helper function to get consistent themed colors
-const getThemedColors = (isDarkMode) => ({
-    background: isDarkMode ? '#1C1C1E' : '#F8F9FA',
-    card: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-    text: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-    secondaryText: isDarkMode ? '#8E8E93' : '#757575',
-    accent: isDarkMode ? '#0A84FF' : '#007AFF',
-    primaryGreen: isDarkMode ? '#4CAF50' : '#00796B', // Example themed green
-    primaryBlue: isDarkMode ? '#2196F3' : '#01579B', // Example themed blue
-    primaryOrange: isDarkMode ? '#FF9800' : '#BF360C', // Example themed orange
-    primaryRed: isDarkMode ? '#FF453A' : '#C62828', // Example themed red
-    inputBorder: isDarkMode ? '#38383A' : '#E0E0E0',
-    placeholder: isDarkMode ? '#636366' : '#B0BEC5',
-});
+// Placeholder Images
+const headerImageUrl = 'https://images.unsplash.com/photo-1593468663047-3a188a3bc489?q=80&w=1974&auto=format&fit=crop';
+const placeholderImage = 'https://via.placeholder.com/300x200.png?text=Image+Loading';
 
 
-// Helper function to get themed styles (using default colors if none provided)
-const getThemedHomeStyles = (colors = getThemedColors(false)) => StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    backgroundColor: colors.background, // Background color applied dynamically
-  },
-   scrollView: {
-    flex: 1,
-    backgroundColor: 'transparent', // Make scrollview transparent to see header
-  },
-  scrollViewContent: {
-    paddingBottom: 80, // Space at the bottom to not hide content behind tab bar
-    backgroundColor: colors.background,
-  },
-  loadingContainer: {
+// --- Themed Styles ---
+// (getThemedStyles function remains the same as before)
+const getThemedStyles = (isDarkMode = false) => {
+  const colors = isDarkMode ? Colors.dark : Colors.light;
+  const dynamicCardShadow = {
+    ...CARD_SHADOW,
+    shadowColor: colors.black, // Use themed black
+  };
+
+  return StyleSheet.create({
+    screenContainer: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    scrollView: {
+      flex: 1,
+    },
+    scrollViewContent: {
+      paddingBottom: 100, // Ensure space at the bottom
+      backgroundColor: colors.background, // Ensure scroll view bg matches screen
+    },
+    loadingContainer: {
       flex: 1,
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: colors.background,
-  },
-  loadingText: {
+    },
+    loadingText: {
       marginTop: SPACING,
       fontSize: 16,
-      color: colors.primaryGreen,
-      fontWeight: '500',
-  },
-  linkText: {
+      color: colors.tint,
+      fontWeight: '600',
+    },
+    linkText: {
       fontSize: 15,
       fontWeight: '600',
-      color: colors.accent,
+      color: colors.tint,
       textDecorationLine: 'underline',
-  },
-  // --- Header Styles ---
-  headerBackgroundContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: HEADER_MAX_HEIGHT,
-    overflow: 'hidden',
-    backgroundColor: colors.primaryGreen + '30', // Fallback background
-    zIndex: 1,
-  },
-  headerImageBackground: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'flex-end',
-  },
-  headerImageOverlay: {
-       ...StyleSheet.absoluteFillObject,
-       backgroundColor: 'rgba(0, 47, 75, 0.45)', // Dark overlay
-   },
-  headerTextContent: {
+    },
+    // Header
+    headerContainer: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: HEADER_MAX_HEIGHT,
+      overflow: 'hidden',
+      zIndex: 10,
+    },
+    headerImageBackground: {
+      width: '100%',
+      height: '100%',
+      justifyContent: 'flex-end', // Align content to bottom
+    },
+    headerOverlay: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.4)',
+    },
+    headerContent: {
       paddingHorizontal: SPACING * 1.5,
-      paddingBottom: SPACING * 2,
+      paddingBottom: SPACING * 4, // Increased padding to avoid overlap with search bar
       zIndex: 3,
-  },
-  greetingText: {
-      fontSize: screenWidth > 500 ? 38 : 34, // Adjust font size for wider screens
-      fontWeight: 'bold',
-      color: '#FFFFFF',
+    },
+    greetingText: {
+      fontSize: screenWidth > 500 ? 36 : 32,
+      fontWeight: '800',
+      color: Colors.white, // Always white for contrast on image
       textShadowColor: 'rgba(0, 0, 0, 0.5)',
       textShadowOffset: { width: 1, height: 2 },
       textShadowRadius: 4,
-      marginBottom: SPACING * 0.5,
-  },
-  locationText: {
-       fontSize: screenWidth > 500 ? 22 : 19,
-       fontWeight: '500',
-       color: '#E1F5FE', // Light blue/cyan
-       textShadowColor: 'rgba(0, 0, 0, 0.4)',
-       textShadowOffset: { width: 1, height: 1 },
-       textShadowRadius: 3,
-       marginBottom: SPACING * 0.75,
-  },
-   weatherText: {
-      fontSize: screenWidth > 500 ? 19 : 17,
-      fontWeight: '500',
-      color: '#FFFFFF',
-      textShadowColor: 'rgba(0, 0, 0, 0.4)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
-  },
-   // --- Search Bar Styles ---
-   searchBarOuterContainer: {
-        position: 'absolute',
-        top: HEADER_MAX_HEIGHT - (SPACING * 3), // Position below header
-        left: 0,
-        right: 0,
-        paddingHorizontal: SPACING * 1.5,
-        // zIndex handled by animation
-   },
-   searchBarInner: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: colors.card,
-        borderColor: colors.inputBorder,
-        borderWidth: 1,
-        borderRadius: SPACING * 2,
-        paddingLeft: SPACING * 1.2,
-        paddingRight: SPACING * 0.8,
-        height: SPACING * 4, // Height of the search bar
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.18,
-        shadowRadius: 8,
-        elevation: 6,
-   },
-   searchIcon: {
-        marginRight: SPACING,
-   },
-   searchBar: {
-        flex: 1,
-        height: '100%',
-        fontSize: 17,
-        color: colors.text,
-   },
-    searchFilterButton: {
-        padding: SPACING * 0.7,
-        marginLeft: SPACING * 0.4,
     },
-   // --- General Section Styles ---
-  sectionHeaderContainer: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginHorizontal: SPACING * 1.5,
-      marginTop: SPACING * 2.5, // Adjusted spacing
-      marginBottom: SPACING * 1.5, // Adjusted spacing
-  },
-  sectionTitle: {
-    fontSize: 22, // Slightly smaller title
-    fontWeight: 'bold',
-    color: colors.primaryGreen, // Themed title color
-  },
-  sectionHeaderAction: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: SPACING * 0.3,
-  },
-  sectionHeaderActionText: {
-      fontSize: 14,
+    locationText: {
+      fontSize: screenWidth > 500 ? 20 : 18,
       fontWeight: '600',
-      color: colors.primaryGreen, // Themed link color
-      marginRight: SPACING * 0.3,
-  },
-  horizontalListPadding: {
-    paddingHorizontal: SPACING * 1.5,
-    paddingBottom: SPACING * 1.5,
-    paddingTop: SPACING * 0.3,
-  },
-   // --- Card Base Styles ---
-    cardBase: {
-        backgroundColor: colors.card,
-        borderRadius: SPACING * 1.3,
-        shadowColor: '#000', // Use black for shadow base
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1, // Reduced opacity
-        shadowRadius: 8, // Increased radius for softer shadow
-        elevation: 3, // Match elevation for Android
-        overflow: Platform.OS === 'android' ? 'hidden' : 'visible', // Android needs overflow hidden for borderRadius + shadow
+      color: Colors.white, // Always white
+      opacity: 0.9,
+      marginVertical: SPACING * 0.5,
     },
-  // --- Destination Card Styles ---
-  destinationCard: {
-    width: screenWidth * 0.7, // Make cards slightly smaller
-    height: screenHeight * 0.28,
-    marginRight: SPACING * 1.5,
-  },
-  destinationImage: {
-      flex: 1,
-      borderRadius: SPACING * 1.3,
-      justifyContent: 'flex-end',
-      overflow: 'hidden',
-  },
-  destinationGradient: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: '70%', // Make gradient cover more
-  },
-  destinationTextContainer: {
-      padding: SPACING * 1.5,
-      zIndex: 1,
-  },
-  destinationName: {
-      fontSize: screenWidth > 500 ? 26 : 20,
-      fontWeight: 'bold',
-      color: '#FFFFFF',
-      marginBottom: SPACING * 0.5,
-      textShadowColor: 'rgba(0, 0, 0, 0.6)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3,
-  },
-  destinationDescription: {
-      fontSize: screenWidth > 500 ? 16 : 14,
-      color: '#F5F5F5',
-      textShadowColor: 'rgba(0, 0, 0, 0.5)',
-      textShadowOffset: { width: 0.5, height: 0.5 },
-      textShadowRadius: 2,
-  },
-  // --- Hotel Card Styles ---
-  hotelCard: {
-      width: screenWidth * 0.6, // Adjust width
-      marginRight: SPACING * 1.5,
-  },
-  hotelImage: {
-      width: '100%',
-      height: screenHeight * 0.18, // Adjust height
-      borderTopLeftRadius: SPACING * 1.3,
-      borderTopRightRadius: SPACING * 1.3,
-  },
-  hotelInfo: {
-      padding: SPACING * 1.2, // Adjust padding
-  },
-  hotelName: {
-      fontSize: 17,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: SPACING * 0.4,
-  },
-  ratingContainer: {
+    weatherContainer: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: SPACING * 0.5,
-  },
-  hotelRating: {
-      fontSize: 14,
-      color: colors.secondaryText,
-      marginLeft: SPACING * 0.3,
-      fontWeight: '500',
-  },
-  hotelPrice: {
-      fontSize: 15,
-      fontWeight: 'bold',
-      color: colors.primaryGreen, // Themed price color
-      marginBottom: SPACING * 0.6,
-  },
-  hotelAmenities: {
-      fontSize: 12,
-      color: colors.secondaryText,
-      opacity: 0.8,
-  },
-  // --- Event Card Styles ---
-  eventCard: {
-      width: screenWidth * 0.5, // Adjust width
-      marginRight: SPACING * 1.5,
-   },
-  eventImage: {
-      width: '100%',
-      height: screenHeight * 0.15, // Adjust height
-      borderTopLeftRadius: SPACING * 1.3,
-      borderTopRightRadius: SPACING * 1.3,
-  },
-  eventInfo: {
-      padding: SPACING, // Adjust padding
-  },
-  eventName: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      lineHeight: 20,
-      marginBottom: SPACING * 0.5,
-      minHeight: 40, // Ensure enough height for 2 lines
-  },
-  eventDateLocation: {
-      fontSize: 13,
-      color: colors.secondaryText,
-      marginBottom: SPACING * 0.4,
-  },
-  eventLocationContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
+      backgroundColor: 'rgba(255, 255, 255, 0.2)', // Semi-transparent white BG
+      borderRadius: SPACING,
+      paddingVertical: SPACING * 0.5,
+      paddingHorizontal: SPACING,
+      alignSelf: 'flex-start', // Only take needed width
       marginTop: SPACING * 0.5,
-  },
-  // --- Restaurant Card Styles ---
-  restaurantCard: {
-      width: screenWidth * 0.55, // Adjust width
-      marginRight: SPACING * 1.5,
-  },
-  restaurantImage: {
-      width: '100%',
-      height: screenHeight * 0.2, // Adjust height
-      justifyContent: 'flex-end',
-      borderTopLeftRadius: SPACING * 1.3,
-      borderTopRightRadius: SPACING * 1.3,
-      overflow: 'hidden',
-  },
-  restaurantGradient: {
-      position: 'absolute',
-      left: 0,
-      right: 0,
-      bottom: 0,
-      height: '50%',
-  },
-  restaurantInfo: {
-      padding: SPACING * 1.2, // Adjust padding
-  },
-  restaurantName: {
-      fontSize: 18,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: SPACING * 0.4,
-  },
-  restaurantCuisine: {
-      fontSize: 14,
-      color: colors.secondaryText,
-      marginBottom: SPACING * 0.6,
-  },
- // --- Attraction Card Styles (Grid) ---
-  attractionGridContainer: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'space-between',
-      marginHorizontal: SPACING * 1.5,
-      paddingTop: SPACING * 0.5,
-      marginBottom: SPACING * 2,
-      rowGap: SPACING * 1.5, // Gap between rows
-  },
-  attractionCard: {
-     width: (screenWidth - (SPACING * 3) - (SPACING * 1.5)) / 2, // Calculate width for 2 columns with padding
-  },
-  attractionImage: {
-      height: screenHeight * 0.13,
-      width: '100%',
-      borderTopLeftRadius: SPACING * 1.3,
-      borderTopRightRadius: SPACING * 1.3,
-  },
-  attractionName: {
+    },
+    weatherText: {
       fontSize: 16,
-      fontWeight: '600',
-      marginTop: SPACING * 0.8,
-      marginBottom: SPACING * 0.3,
-      marginHorizontal: SPACING,
-      color: colors.text,
-  },
-  attractionDescription: {
-      fontSize: 12,
-      color: colors.secondaryText,
-      paddingHorizontal: SPACING,
-      paddingBottom: SPACING,
-      opacity: 0.8,
-  },
-   // --- Outdoor Activities Styles ---
-  outdoorActivitiesRow: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      justifyContent: 'center', // Center items if they don't fill the row
-      marginHorizontal: SPACING,
-      marginBottom: SPACING * 2.5,
-      marginTop: SPACING * 1.5,
-      gap: SPACING, // Gap between items
-  },
-  outdoorActivityButton: {
-      alignItems: 'center',
-      paddingVertical: SPACING * 1.2,
-      paddingHorizontal: SPACING,
-      minWidth: screenWidth / 4 - SPACING * 1.5, // Adjust width for 3-4 items per row
-      borderRadius: SPACING,
-      borderWidth: 1,
-      borderColor: colors.primaryGreen + '80', // BorderColor applied dynamically
-      backgroundColor: colors.card, // BackgroundColor applied dynamically
-      shadowColor: '#000', // Use black for shadow base
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.08, // Reduced opacity
-      shadowRadius: 3, // Softer shadow
-      elevation: 2,
-  },
-  outdoorActivityName: {
-      fontSize: 13,
       fontWeight: '500',
-      color: colors.primaryGreen, // Color applied dynamically
-      marginTop: SPACING * 0.6,
-      textAlign: 'center',
-  },
- // --- Info Section Styles ---
-  infoSectionCard: {
-      marginHorizontal: SPACING * 1.5,
-      marginBottom: SPACING * 2.5,
-      padding: SPACING * 1.8,
-      borderRadius: SPACING * 1.5,
-      backgroundColor: colors.card, // Background color applied dynamically
-       shadowColor: '#000', // Use black for shadow base
-       shadowOffset: { width: 0, height: 4 },
-       shadowOpacity: 0.1, // Reduced opacity
-       shadowRadius: 8, // Increased radius
-       elevation: 3, // Match elevation
-  },
-  infoSubSection: {
-      marginBottom: SPACING * 1.5,
-      paddingBottom: SPACING * 1.2,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.border, // BorderColor applied dynamically
-  },
-  infoSubSectionNoBorder: {
-      marginBottom: 0,
-      paddingBottom: 0,
-  },
-  infoIconTitle: {
+      color: Colors.white, // Always white
+      marginLeft: SPACING * 0.5,
+    },
+    // Search Bar
+    searchBarContainer: {
+      position: 'absolute',
+      top: HEADER_MAX_HEIGHT - SPACING * 2.5, // Adjust vertical position
+      left: SPACING * 1.5,
+      right: SPACING * 1.5,
+      zIndex: 15,
+    },
+    searchBarInner: {
       flexDirection: 'row',
       alignItems: 'center',
-      marginBottom: SPACING,
-  },
-  infoCardTitle: {
-      fontSize: 18,
-      fontWeight: 'bold',
-      marginLeft: SPACING * 0.8,
-      // Color applied dynamically
-  },
-  infoCardText: {
-      fontSize: 15,
-      lineHeight: 22,
-      color: colors.secondaryText, // Themed text color
-      marginLeft: SPACING * 0.5, // Indent list items
-      marginBottom: SPACING * 0.4,
-  },
-  // --- Transportation Styles ---
-  transportContainer: {
-      marginHorizontal: SPACING * 1.5,
-      marginBottom: SPACING * 2.5,
-      backgroundColor: colors.primaryBlue + '10', // Background color applied dynamically
-      padding: SPACING * 1.5,
-      paddingTop: SPACING,
-      borderRadius: SPACING * 1.3,
-      shadowColor: colors.primaryBlue, // Themed shadow color
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-  },
-  transportItem: {
-      flexDirection: 'row',
-      alignItems: 'flex-start',
-      marginBottom: SPACING * 1.2,
-      paddingBottom: SPACING * 1.2,
-      borderBottomWidth: 1,
-      borderBottomColor: colors.primaryBlue + '50', // BorderColor applied dynamically
-      // For removing the bottom border on the last item, you'd need conditional styling in the map function
-  },
-  transportIcon: {
-      marginRight: SPACING * 1.2,
-      marginTop: SPACING * 0.2,
-  },
-  transportTextContainer: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: SPACING * 2, // Fully rounded
+      paddingHorizontal: SPACING,
+      height: SPACING * 3.5,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...dynamicCardShadow, // Use themed shadow
+    },
+    searchIcon: {
+      marginRight: SPACING,
+    },
+    searchInput: {
       flex: 1,
-  },
-  transportType: {
+      fontSize: 16,
+      color: colors.text, // Use text color for the placeholder text feel
+    },
+    searchButton: {
+      padding: SPACING * 0.5, // Tap target size
+    },
+    // Section Header
+    sectionHeaderContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginHorizontal: SPACING * 1.5,
+      marginTop: SPACING * 2, // More space after header/search
+      marginBottom: SPACING * 1.5, // Space before content
+    },
+    sectionTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: colors.text,
+    },
+    seeAllText: {
+      fontSize: 14,
+      fontWeight: '600',
+      color: colors.tint,
+    },
+    // Cards - Base Style
+    cardBase: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: SPACING * 1.5,
+      ...dynamicCardShadow, // Use themed shadow
+      overflow: 'hidden', // Clip content/images to rounded corners
+    },
+    // Destination Card
+    destinationCard: {
+      width: screenWidth * 0.75,
+      height: screenHeight * 0.3,
+      marginRight: SPACING * 1.5, // Space between cards
+    },
+    destinationImage: {
+      flex: 1,
+      // No border radius here, handled by cardBase overflow: 'hidden'
+      justifyContent: 'flex-end', // Content at bottom
+    },
+    destinationContent: {
+      padding: SPACING,
+      // Gradient applied separately
+    },
+    destinationName: {
+      fontSize: 20,
+      fontWeight: '700',
+      color: Colors.white, // White text on gradient
+    },
+    destinationDescription: {
+      fontSize: 14,
+      color: Colors.white, // White text on gradient
+      opacity: 0.9,
+      marginTop: SPACING * 0.25,
+    },
+    // Hotel Card
+    hotelCard: {
+      width: screenWidth * 0.65,
+      marginRight: SPACING * 1.5,
+    },
+    hotelImage: {
+      width: '100%',
+      height: screenHeight * 0.18, // Slightly smaller image
+      // Top radius handled by cardBase overflow: 'hidden'
+    },
+    hotelInfo: {
+      padding: SPACING,
+    },
+    hotelName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: SPACING * 0.25,
+    },
+    ratingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginVertical: SPACING * 0.5,
+    },
+    hotelRating: {
+      fontSize: 14,
+      color: colors.secondary,
+      marginLeft: SPACING * 0.5,
+    },
+    hotelPrice: {
+      fontSize: 16,
+      fontWeight: '700',
+      color: colors.success, // Assuming success color for price
+      marginTop: SPACING * 0.25,
+    },
+    // Event Card
+    eventCard: {
+      width: screenWidth * 0.55,
+      marginRight: SPACING * 1.5,
+    },
+    eventImage: {
+      width: '100%',
+      height: screenHeight * 0.15,
+    },
+    eventInfo: {
+      padding: SPACING,
+    },
+    eventName: {
       fontSize: 16,
       fontWeight: '600',
-      color: colors.primaryBlue, // Color applied dynamically
-      marginBottom: SPACING * 0.4,
-  },
-  transportDetails: {
+      color: colors.text,
+      marginBottom: SPACING * 0.25,
+    },
+    eventDetails: {
+      fontSize: 13,
+      color: colors.secondary,
+      marginTop: SPACING * 0.5,
+    },
+    // Restaurant Card
+    restaurantCard: {
+      width: screenWidth * 0.6,
+      marginRight: SPACING * 1.5,
+    },
+    restaurantImage: {
+      width: '100%',
+      height: screenHeight * 0.18, // Match hotel image height
+    },
+    restaurantInfo: {
+      padding: SPACING,
+    },
+    restaurantName: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: colors.text,
+      marginBottom: SPACING * 0.25,
+    },
+    restaurantDetails: {
       fontSize: 14,
-      color: colors.secondaryText, // Color applied dynamically
-      lineHeight: 20,
-  },
-  // --- Emergency Contacts Styles ---
-  emergencyContactsContainer: {
+      color: colors.secondary,
+      marginTop: SPACING * 0.5,
+    },
+    // Attraction Card (Grid Layout)
+    attractionCard: {
+      width: (screenWidth - SPACING * 4.5) / 2, // Two columns with spacing
+      marginBottom: SPACING * 1.5,
+    },
+    attractionImage: {
+      width: '100%',
+      height: screenHeight * 0.15,
+    },
+    attractionName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.text,
+      paddingHorizontal: SPACING,
+      paddingVertical: SPACING * 0.75, // Slightly less vertical padding
+    },
+    // Info Sections (Culture, History etc.)
+    infoCard: {
       marginHorizontal: SPACING * 1.5,
-      marginBottom: SPACING * 3,
-  },
-  emergencyContactButton: {
+      marginVertical: SPACING,
+      padding: SPACING * 1.5,
+      borderRadius: SPACING * 1.5,
+      backgroundColor: colors.cardBackground,
+      ...dynamicCardShadow,
+    },
+    infoTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: colors.text,
+      marginBottom: SPACING,
+    },
+    infoText: { // General text style within info cards
+      fontSize: 14,
+      color: colors.secondary,
+      lineHeight: 20,
+      marginBottom: SPACING * 0.5, // Add space between list items
+    },
+    infoItemContainer: { // Container for bullet + text
+       flexDirection: 'row',
+       marginBottom: SPACING * 0.5,
+       alignItems: 'flex-start', // Align bullet with start of text
+    },
+    infoBullet: {
+        fontSize: 14,
+        color: colors.secondary,
+        marginRight: SPACING * 0.5,
+        lineHeight: 20,
+    },
+    infoItemText: {
+        flex: 1, // Allow text to wrap
+        fontSize: 14,
+        color: colors.secondary,
+        lineHeight: 20,
+    },
+    // Outdoor Activity Card
+    outdoorActivityCardContainer: { // Container for margin/spacing
+        width: (screenWidth - SPACING * 4.5) / 3, // Aim for 3 columns, adjust spacing calc
+        padding: SPACING * 0.75, // Spacing around each card
+    },
+    outdoorActivityCard: { // The actual card styling
+        flex: 1, // Take full height of container
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: SPACING,
+        minHeight: 90, // Ensure minimum tap height & content space
+    },
+    outdoorActivityText: {
+        fontSize: 14,
+        fontWeight: '500',
+        color: colors.tint,
+        marginTop: SPACING * 0.5,
+        textAlign: 'center',
+    },
+    // Transport
+    transportItem: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.primaryRed + '15', // BackgroundColor applied dynamically
-      borderColor: colors.primaryRed + '50', // BorderColor applied dynamically
-      padding: SPACING * 1.2,
-      borderRadius: SPACING,
-      marginBottom: SPACING,
-      borderWidth: 1,
-      shadowColor: colors.primaryRed, // Themed shadow color
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-      elevation: 3,
-  },
-  emergencyContactInfo: {
-      flex: 1,
-      marginLeft: SPACING * 1.2,
-      marginRight: SPACING * 0.8,
-  },
-  emergencyContactName: {
+      paddingVertical: SPACING,
+      // Apply border only if not the last item (handled in render)
+    },
+    transportItemContainer: { // Wrapper for border logic
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+    },
+    transportIcon: {
+      marginRight: SPACING,
+    },
+    transportTextContainer: {
+        flex: 1, // Take remaining space
+    },
+    transportType: {
       fontSize: 16,
-      fontWeight: 'bold',
-      color: colors.primaryRed, // Color applied dynamically
-  },
-  emergencyContactNumber: {
-      fontSize: 15,
-      color: colors.primaryRed, // Color applied dynamically
-      marginTop: SPACING * 0.3,
-  },
-  // --- Footer Spacer ---
-  footerSpacer: {
-      height: SPACING * 3, // Space at the very bottom
-  },
-});
+      fontWeight: '600',
+      color: colors.text,
+    },
+    transportDetails: {
+      fontSize: 14,
+      color: colors.secondary,
+      marginTop: 2,
+    },
+    // Emergency Contacts
+    emergencyContactButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: SPACING,
+      borderRadius: SPACING,
+      backgroundColor: colors.cardBackground, // Use card background
+      ...dynamicCardShadow,
+      marginBottom: SPACING,
+    },
+    emergencyContactInfo: {
+      flex: 1,
+      marginHorizontal: SPACING,
+    },
+    emergencyContactName: {
+      fontSize: 16,
+      fontWeight: '600',
+      color: colors.danger, // Use danger color
+    },
+    emergencyContactNumber: {
+      fontSize: 14,
+      color: colors.danger, // Use danger color
+    },
+    // FlatList specific styles
+    horizontalListContent: {
+      paddingHorizontal: SPACING * 1.5,
+      paddingVertical: SPACING * 0.5, // Add some vertical padding
+    },
+    gridContainer: {
+      // This style is now applied to FlatList's columnWrapperStyle
+      justifyContent: 'space-between', // Distribute items evenly in the row
+      paddingHorizontal: SPACING * 0.75, // Horizontal padding for the grid overall
+    },
+    outdoorGridContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start', // Align items to start
+      marginHorizontal: SPACING * 0.75, // Base margin
+      marginTop: SPACING * 0.5,
+    },
+    // Save Icon Button
+    saveButton: {
+        position: 'absolute',
+        top: SPACING * 0.75,
+        right: SPACING * 0.75,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Semi-transparent background
+        borderRadius: 15,
+        padding: SPACING * 0.4,
+        zIndex: 5, // Ensure it's above image content
+    },
+    saveIcon: {
+        // Color set dynamically based on saved state
+    }
+  });
+};
 
 
-// --- Reusable Components (Adjusted for this app's needs) ---
-// Section Header (similar to E-Campus)
-const SectionHeader = React.memo(({ title, rightActionLabel, onRightActionPress, animatedStyle }) => (
-  <Animated.View style={[getThemedHomeStyles().sectionHeaderContainer, animatedStyle]}>
-    <Text style={getThemedHomeStyles().sectionTitle}>{title}</Text>
-    {rightActionLabel && onRightActionPress && (
-        <TouchableOpacity onPress={onRightActionPress} style={getThemedHomeStyles().sectionHeaderAction}>
-            <Text style={getThemedHomeStyles().sectionHeaderActionText}>{rightActionLabel}</Text>
-            <Ionicons name="arrow-forward-outline" size={16} color={getThemedHomeStyles().sectionHeaderActionText.color} />
+// --- Reusable Components ---
+const SectionHeader = React.memo(({ title, onSeeAll, isDarkMode }) => {
+  const styles = getThemedStyles(isDarkMode);
+  return (
+    <Animated.View entering={FadeIn.delay(200)} style={styles.sectionHeaderContainer}>
+      <Text style={styles.sectionTitle}>{title}</Text>
+      {onSeeAll && (
+        <TouchableOpacity onPress={onSeeAll} accessibilityRole="button" accessibilityLabel={`See all ${title}`}>
+          <Text style={styles.seeAllText}>See All</Text>
         </TouchableOpacity>
-    )}
-  </Animated.View>
-));
-
-// Styled Card (similar to E-Campus)
-const StyledCard = React.memo(({ children, style, onPress, animatedStyle, accessibilityLabel }) => {
-    const scale = useSharedValue(1);
-    const cardAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: withSpring(scale.value, { damping: 10, stiffness: 200 }) }], // Use withSpring for bounce effect
-    }));
-    const handlePressIn = () => { scale.value = 0.97; };
-    const handlePressOut = () => { scale.value = 1; };
-
-    return (
-        <Animated.View style={[getThemedHomeStyles().cardBase, style, animatedStyle, cardAnimatedStyle]}>
-            <TouchableOpacity
-                activeOpacity={0.95}
-                onPress={onPress}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                accessibilityLabel={accessibilityLabel}
-            >
-                {children}
-            </TouchableOpacity>
-        </Animated.View>
-    );
+      )}
+    </Animated.View>
+  );
 });
 
-// Animated List Item (similar to E-Campus)
-const AnimatedListItem = React.memo(({ children, index, delayMultiplier = 60, initialOffset = 40, duration = 500, rotate = false }) => {
-    // Ensure delayMultiplier is not too large for faster loading sections
-    const adjustedDelayMultiplier = Math.min(delayMultiplier, 100); // Cap the delay
+const AnimatedCard = React.memo(({ children, style, onPress, accessibilityLabel, isDarkMode }) => {
+  const scale = useSharedValue(1);
+  const styles = getThemedStyles(isDarkMode); // Get themed styles
 
-    return (
-        <Animated.View
-            entering={
-                SlideInLeft.delay(index * adjustedDelayMultiplier).duration(duration)
-                 .withCallback((finished) => {
-                     if (finished && rotate) {
-                         // Optional: add a slight spring back after rotation if needed
-                         // For simplicity, just fading/sliding in is usually enough
-                     }
-                 })
-            }
-            // Apply initial rotation if rotate is true (this will be part of the entering animation)
-            // style={rotate ? { transform: [{ rotate: '-3deg' }] } : {}} // Initial rotation is part of entering animation now
-        >
-            {children}
-        </Animated.View>
-    );
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: withSpring(scale.value) }],
+  }));
+
+  return (
+    <Animated.View style={[styles.cardBase, style, animatedStyle]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => (scale.value = 0.97)} // Slightly less pronounced press
+        onPressOut={() => (scale.value = 1)}
+        accessibilityLabel={accessibilityLabel}
+        style={{ flex: 1 }} // Ensure pressable fills the card
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
 });
 
+// No longer needed if Lottie is removed
+// const AnimatedLottie = React.memo(({ source, style, loop = true }) => (
+//   <LottieView
+//     source={source}
+//     autoPlay
+//     loop={loop}
+//     style={style}
+//     hardwareAccelerationAndroid // Enable hardware acceleration if possible
+//     renderMode={Platform.OS === 'ios' ? 'HARDWARE' : 'AUTOMATIC'} // Optimize render mode
+//     onError={(error) => console.warn('Lottie animation failed to load:', error)}
+//   />
+// ));
 
-const LoadingIndicator = ({ size = 'large', color = getThemedHomeStyles().loadingText.color }) => (
-    <View style={getThemedHomeStyles().loadingContainer}>
-        <ActivityIndicator size={size} color={color} />
-        <Text style={getThemedHomeStyles().loadingText}>Loading Bejaia's Best...</Text>
-    </View>
-);
-
+const LoadingAnimation = ({ isDarkMode }) => {
+    const styles = getThemedStyles(isDarkMode);
+    // *** FIX: Using standard ActivityIndicator instead of Lottie ***
+    return (
+        <View style={styles.loadingContainer}>
+            {/* Use standard ActivityIndicator */}
+            <ActivityIndicator size="large" color={styles.loadingText.color} />
+            <Text style={styles.loadingText}>Discovering Bejaia...</Text>
+        </View>
+    );
+};
 
 // --- Main Home Screen ---
 function HomeScreen() {
+  // Hooks initialized first
   const navigation = useNavigation();
-  const { currentUser, userData, isLoadingAuth } = useAuth(); // Get user and loading state from AuthContext
-  const colorScheme = useColorScheme(); // 'light' or 'dark'
+  const { currentUser, userData, isLoadingAuth } = useAuth(); // Using placeholder hook
+  const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const colors = getThemedColors(isDarkMode); // Define colors based on theme
-  const styles = getThemedHomeStyles(colors); // Get themed styles
+  const styles = getThemedStyles(isDarkMode); // Get themed styles once
 
   const scrollY = useSharedValue(0);
   const [appData, setAppData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true); // Loading state for home screen data
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [userLocation] = useState('Bejaia'); // Hardcoded for now
-  const [greeting, setGreeting] = useState('Hello'); // Initial greeting
-  const [weather, setWeather] = useState('Loading weather...'); // Placeholder for weather
-
-  // --- Effects ---
-  // Set dynamic greeting
-  useEffect(() => {
-    const hour = new Date().getHours();
-    if (hour < 12) setGreeting('Good Morning');
-    else if (hour < 18) setGreeting('Good Afternoon');
-    else setGreeting('Good Evening');
-  }, []);
-
-   // Fetch all data for the home screen
-   const fetchAllData = useCallback(async () => {
-       setIsLoading(true); // Set loading true initially
-       // No need to set refreshing true here, it's handled by onRefresh
-       try {
-           // Fetch data using the dataService functions (which use mock data for now)
-           const [
-               featuredDestinations,
-               upcomingEvents,
-               topRatedRestaurants,
-               recommendedHotels,
-               popularAttractions,
-           ] = await Promise.all([
-               getFeaturedDestinations(),
-               getUpcomingEvents(),
-               getTopRatedRestaurants(),
-               getRecommendedHotels(),
-               getPopularAttractions(),
-               // Add calls for other sections if they become dynamic
-           ]);
-
-           setAppData({
-               featuredDestinations,
-               upcomingEvents,
-               topRatedRestaurants,
-               recommendedHotels,
-               popularAttractions,
-               localCulture: initialMockData.localCulture, // Still using mock for static sections
-               historicalSites: initialMockData.historicalSites,
-               beachesCoastal: initialMockData.beachesCoastal,
-               outdoorActivities: initialMockData.outdoorActivities,
-               transportationInfo: initialMockData.transportationInfo,
-               emergencyContacts: initialMockData.emergencyContacts,
-           });
-
-           setWeather('28°C, Clear Skies'); // Placeholder weather update
-
-       } catch (error) {
-           console.error("Error fetching data:", error);
-           Alert.alert("Error", "Failed to load data for the home screen.");
-            // Set appData to null or a default empty structure on error
-           setAppData(null);
-       } finally {
-           setIsLoading(false);
-           setRefreshing(false); // Ensure refreshing is turned off
-       }
-   }, []); // Dependencies: fetch functions are stable, userData might be needed if fetching user-specific data
-
-   useEffect(() => {
-       // Fetch data when the component mounts or when user data changes (if data becomes user-specific)
-       // Only fetch if user is logged in and not already loading auth
-        if (!isLoadingAuth && currentUser) {
-             fetchAllData();
-        } else if (!isLoadingAuth && !currentUser) {
-             // Clear data if user logs out
-             setAppData(null);
-             setIsLoading(false);
-             setRefreshing(false);
-        }
-   }, [isLoadingAuth, currentUser, fetchAllData]); // Depend on auth state and fetchAllData callback
-
-   // Pull to refresh handler
-   const onRefresh = useCallback(() => {
-        setRefreshing(true);
-        fetchAllData(); // Call the main data fetching function
-   }, [fetchAllData]);
+  const [userLocation] = useState('Bejaia'); // Could be dynamic later
+  const [greeting, setGreeting] = useState('Hello');
+  const [weather, setWeather] = useState({ temp: '--°C', condition: 'Loading...', icon: 'sync-outline' }); // Default/Placeholder
+  const [savedItems, setSavedItems] = useState(new Set()); // Use Set for efficient lookups
 
   // --- Animations ---
-  const scrollHandler = useAnimatedScrollHandler((event) => {
-    scrollY.value = event.contentOffset.y;
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollY.value = event.contentOffset.y;
+    },
   });
 
-  const headerAnimatedStyle = useAnimatedStyle(() => {
-    const translateY = interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE], [0, -HEADER_SCROLL_DISTANCE], Extrapolate.CLAMP);
-    return { transform: [{ translateY }] };
-  });
+  const headerAnimatedStyle = useAnimatedStyle(() => ({
+    height: interpolate(
+      scrollY.value,
+      [0, HEADER_SCROLL_DISTANCE],
+      [HEADER_MAX_HEIGHT, HEADER_MIN_HEIGHT],
+      Extrapolate.CLAMP
+    ),
+  }));
 
-  const headerContentAnimatedStyle = useAnimatedStyle(() => {
-       const opacity = interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE * 0.6], [1, 0], Extrapolate.CLAMP);
-       const translateY = interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE * 0.5], [0, 30], Extrapolate.CLAMP);
-       return { opacity, transform: [{ translateY }] };
-  });
-
-  const headerImageAnimatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(scrollY.value, [-HEADER_MAX_HEIGHT, 0], [1.6, 1], Extrapolate.CLAMP); // Effet Parallax/Zoom
-    const translateY = interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE],[0, HEADER_SCROLL_DISTANCE * 0.6], Extrapolate.CLAMP); // Effet Parallax vertical
-    return { transform: [{ translateY }, { scale }] };
-  });
-
-  const searchBarAnimatedStyle = useAnimatedStyle(() => {
-    const targetY = -(HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT) + (Platform.OS === 'ios' ? 50 : 40);
-    const translateY = interpolate( scrollY.value, [HEADER_SCROLL_DISTANCE * 0.7, HEADER_SCROLL_DISTANCE], [0, targetY], Extrapolate.CLAMP);
-    const finalTranslateY = scrollY.value >= HEADER_SCROLL_DISTANCE ? targetY : translateY;
-    const zIndex = scrollY.value >= HEADER_SCROLL_DISTANCE ? 15 : 5; // To overlay header when scrolled up
-    return { transform: [{ translateY: finalTranslateY }], zIndex };
-  });
-
-   // Helper for simple opacity/slide in animation on first section header
-   const firstSectionHeaderAnimatedStyle = useAnimatedStyle(() => ({
-       opacity: interpolate(scrollY.value, [0, 50], [0, 1], Extrapolate.CLAMP)
-   }));
+  const headerContentAnimatedStyle = useAnimatedStyle(() => ({
+      opacity: interpolate(
+          scrollY.value,
+          [0, HEADER_SCROLL_DISTANCE / 2], // Fade out quicker
+          [1, 0],
+          Extrapolate.CLAMP
+      ),
+      transform: [{
+          translateY: interpolate(
+              scrollY.value,
+              [0, HEADER_SCROLL_DISTANCE],
+              [0, 50], // Move down slightly as it fades
+              Extrapolate.CLAMP
+          )
+      }]
+  }));
 
 
-  // --- Render Helper Functions ---
-  const renderDestinationCard = useCallback(({ item, index }) => (
-    <AnimatedListItem index={index} delayMultiplier={80}>
-        <StyledCard
-            style={styles.destinationCard}
-            onPress={() => {
-                console.log('Navigate to Destination:', item.name);
-                // You'll likely need a specific destination detail screen
-                // navigation.navigate('DestinationDetail', { destinationId: item.id });
-                Alert.alert("Navigate", `Simulating navigation to ${item.name}`);
-            }}
-            accessibilityLabel={`View details for ${item.name}`}
-        >
-            <ImageBackground source={{ uri: item.image }} style={styles.destinationImage} resizeMode="cover">
-                <LinearGradient colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']} style={styles.destinationGradient} />
-                <View style={styles.destinationTextContainer}>
-                    <Text style={styles.destinationName}>{item.name}</Text>
-                    <Text style={styles.destinationDescription}>{item.description}</Text>
-                </View>
-            </ImageBackground>
-        </StyledCard>
-    </AnimatedListItem>
-  ), [navigation, styles]); // Add styles to dependencies if they change based on theme
+  const headerImageAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: interpolate(scrollY.value, [-HEADER_MAX_HEIGHT, 0], [1.8, 1], Extrapolate.CLAMP) },
+      { translateY: interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE], [0, HEADER_SCROLL_DISTANCE * 0.5], Extrapolate.CLAMP) },
+    ],
+  }));
 
-  const renderHotelCard = useCallback(({ item, index }) => (
-    <AnimatedListItem index={index} delayMultiplier={70}>
-      <StyledCard
-           style={styles.hotelCard}
-           onPress={() => navigation.navigate('HotelDetail', { hotelId: item.id, hotel: item })} // Pass item for detail screen
-           accessibilityLabel={`View details for ${item.name}`}
-        >
-        <Image source={{ uri: item.image }} style={styles.hotelImage} resizeMode="cover" />
-        <View style={styles.hotelInfo}>
-          <Text style={styles.hotelName} numberOfLines={1}>{item.name}</Text>
-          <View style={styles.ratingContainer}>
-            <Ionicons name="star" size={15} color="#FFC107" />
-            <Text style={styles.hotelRating}>{item.rating || 'N/A'}</Text>
-          </View>
-          {item.price && <Text style={styles.hotelPrice}>{item.price}/night</Text>}
-          {item.amenities && Array.isArray(item.amenities) && item.amenities.length > 0 && <Text style={styles.hotelAmenities} numberOfLines={1}>{item.amenities.join(' • ')}</Text>}
-        </View>
-      </StyledCard>
-    </AnimatedListItem>
-  ), [navigation, styles]);
+  const searchBarAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateY: interpolate(
+          scrollY.value,
+          [0, HEADER_SCROLL_DISTANCE],
+          [0, -(HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT - SPACING * 1.5)], // Adjust target position
+          Extrapolate.CLAMP
+        ),
+      },
+    ],
+    // Optionally fade in/out or change shadow based on scroll
+  }));
 
-  const renderEventCard = useCallback(({ item, index }) => (
-    <AnimatedListItem index={index} delayMultiplier={75}>
-      <StyledCard
-           style={styles.eventCard}
-           onPress={() => {
-              console.log('Navigate to Event:', item.name);
-              // navigation.navigate('EventDetail', { eventId: item.id }); // Assuming an EventDetail screen
-              Alert.alert("Navigate", `Simulating navigation to Event: ${item.name}`);
-           }}
-           accessibilityLabel={`View event details for ${item.name}`}
-        >
-        <Image source={{ uri: item.image }} style={styles.eventImage} />
-        <View style={styles.eventInfo}>
-          <Text style={styles.eventName} numberOfLines={2}>{item.name}</Text>
-          {item.date && item.location && (
-            <>
-              {item.date && <Text style={styles.eventDateLocation}>{item.date}</Text>}
-              <View style={styles.eventLocationContainer}><Ionicons name="location-outline" size={12} color={styles.eventDateLocation.color} /><Text style={styles.eventDateLocation}> {item.location}</Text></View>
-            </>
-          )}
-        </View>
-      </StyledCard>
-    </AnimatedListItem>
-  ), [styles]);
+  // --- Effects ---
+  useEffect(() => {
+    const hour = new Date().getHours();
+    setGreeting(hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening');
+    // TODO: Fetch real weather based on location
+    // For now, use placeholder and determine icon
+    // This is a simplified mapping
+    const placeholderWeather = { temp: '28°C', condition: 'Clear', icon: 'weather-sunny' }; // Example
+    setWeather(placeholderWeather);
 
-  const renderRestaurantCard = useCallback(({ item, index }) => (
-    <AnimatedListItem index={index} delayMultiplier={80}>
-      <StyledCard
-           style={styles.restaurantCard}
-           onPress={() => {
-               console.log('Navigate to Restaurant:', item.name);
-               // navigation.navigate('RestaurantDetail', { restaurantId: item.id }); // Assuming a RestaurantDetail screen
-                Alert.alert("Navigate", `Simulating navigation to Restaurant: ${item.name}`);
-           }}
-           accessibilityLabel={`View details for ${item.name}`}
-        >
-        <ImageBackground source={{ uri: item.image }} style={styles.restaurantImage} resizeMode="cover">
-          <LinearGradient colors={['rgba(0,0,0,0.0)', 'rgba(0,0,0,0.6)']} style={styles.restaurantGradient} />
-        </ImageBackground>
-        <View style={styles.restaurantInfo}>
-          <Text style={styles.restaurantName} numberOfLines={1}>{item.name}</Text>
-          {item.cuisine && item.priceRange && <Text style={styles.restaurantCuisine}>{item.cuisine} • {item.priceRange}</Text>}
-          {item.rating && (
-             <View style={styles.ratingContainer}><Ionicons name="star" size={16} color="#FFC107" /><Text style={styles.restaurantRating}>{item.rating}</Text></View>
-          )}
-        </View>
-      </StyledCard>
-    </AnimatedListItem>
-  ), [styles]);
+  }, []); // Run only once on mount
 
- const renderAttractionCard = useCallback(({ item, index }) => (
-    <AnimatedListItem index={index} delayMultiplier={50}>
-        <StyledCard
-            style={styles.attractionCard}
-             onPress={() => navigation.navigate('AttractionDetail', { attractionId: item.id, attraction: item })} // Pass item for detail screen
-             accessibilityLabel={`View details for ${item.name}`}
-        >
-            <Image source={{ uri: item.image }} style={styles.attractionImage} />
-            <Text style={styles.attractionName} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.attractionDescription} numberOfLines={1}>{item.description}</Text>
-        </StyledCard>
-    </AnimatedListItem>
-), [navigation, styles]);
+  const fetchAllData = useCallback(async (useCache = true) => {
+    console.log('Fetching data...');
+    if (!refreshing) setIsLoading(true); // Show loading only if not refreshing
 
-
- // Render Local Culture Item
- const renderLocalCulture = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={60}>
-        <View style={styles.infoCardItem}>
-            <Text style={[styles.infoCardText, { color: styles.infoCardText.color }]}> • {item.description}</Text>
-        </View>
-    </AnimatedListItem>
- ), [styles]);
-
-  // Render Historical Site Item
-  const renderHistoricalSite = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={60}>
-      <View style={styles.infoCardItem}>
-        <Text style={[styles.infoCardText, { color: styles.infoCardText.color }]}> • {item.name}</Text>
-      </View>
-    </AnimatedListItem>
-  ), [styles]);
-
-  // Render Beach Item
-  const renderBeach = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={60}>
-      <View style={styles.infoCardItem}>
-        <Text style={[styles.infoCardText, { color: styles.infoCardText.color }]}> • {item.name}</Text>
-      </View>
-    </AnimatedListItem>
-  ), [styles]);
-
- // Render Outdoor Activity Button
- const renderOutdoorActivity = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={60}>
-        <TouchableOpacity style={[styles.outdoorActivityButton, { borderColor: colors.primaryGreen + '80', backgroundColor: colors.card }]} onPress={() => console.log('Explore:', item.name)} activeOpacity={0.7} accessibilityLabel={`Explore ${item.name} activities`}>
-            <Ionicons name={item.icon} size={34} color={colors.primaryGreen} />
-            <Text style={[styles.outdoorActivityName, { color: colors.primaryGreen }]}>{item.name}</Text>
-        </TouchableOpacity>
-    </AnimatedListItem>
- ), [colors, styles]);
-
-
-const renderTransportInfo = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={50}>
-        <View style={[styles.transportItem, { borderBottomColor: colors.primaryBlue + '50' }]}>
-            <Ionicons name={item.icon} size={28} color={colors.primaryBlue} style={styles.transportIcon} />
-            <View style={styles.transportTextContainer}>
-                 <Text style={[styles.transportType, { color: colors.primaryBlue }]}>{item.type}</Text>
-                 <Text style={[styles.transportDetails, { color: colors.secondaryText }]}>{item.details}</Text>
-            </View>
-        </View>
-    </AnimatedListItem>
-), [colors, styles]);
-
-  const renderEmergencyContact = useCallback((item, index) => (
-    <AnimatedListItem key={item.id} index={index} delayMultiplier={50}>
-      <TouchableOpacity style={[styles.emergencyContactButton, { backgroundColor: colors.primaryRed + '15', borderColor: colors.primaryRed + '50' }]} onPress={() => Linking.openURL(`tel:${item.number}`).catch(err => Alert.alert("Error", "Could not open dialer.")) } activeOpacity={0.7} accessibilityLabel={`Call ${item.name} at ${item.number}`}>
-        <Ionicons name={item.icon} size={32} color={colors.primaryRed} />
-        <View style={styles.emergencyContactInfo}>
-          <Text style={[styles.emergencyContactName, { color: colors.primaryRed }]}>{item.name}</Text>
-          <Text style={[styles.emergencyContactNumber, { color: colors.primaryRed }]}>{item.number}</Text>
-        </View>
-         <Ionicons name="call-outline" size={24} color={colors.primaryRed} />
-      </TouchableOpacity>
-    </AnimatedListItem>
-  ), [colors, styles]);
-
-
-  // --- Main Render Logic ---
-  // Show loading state if AuthContext is still loading
-  if (isLoadingAuth) {
-       return (
-           <View style={[styles.screenContainer, styles.loadingContainer]}>
-               <ActivityIndicator size="large" color={colors.accent} />
-               <Text style={styles.loadingText}>Checking authentication...</Text>
-           </View>
-       );
-  }
-
-  // If user is not logged in, this screen should not be reachable via AppNavigator,
-  // but as a safeguard, we can show a message or redirect.
-   if (!currentUser) {
-        // This case should ideally be handled by AppNavigator switching to AuthStack
-        // If you land here, there might be a navigation setup issue.
-        console.warn("HomeScreen rendered without a logged-in user.");
-        return (
-            <View style={[styles.screenContainer, styles.loadingContainer]}>
-                <Text style={[styles.loadingText, {color: colors.secondaryText}]}>Please log in to view this screen.</Text>
-            </View>
-        );
-   }
-
-
-  if (isLoading && !appData) {
-      // Show loading indicator specifically for home screen data fetching
-      return <LoadingIndicator color={colors.primaryGreen}/>;
-  }
-
-   if (!appData) {
-        // Show error state if data fetching failed and no data is available
-        return (
-            <View style={[styles.screenContainer, styles.loadingContainer]}>
-                <Text style={[styles.loadingText, {color: colors.primaryRed}]}>Failed to load data.</Text>
-                 <TouchableOpacity onPress={fetchAllData} style={{marginTop: SPACING}}>
-                     <Text style={[styles.linkText, {color: colors.accent}]}>Tap to Retry</Text>
-                 </TouchableOpacity>
-            </View>
-        );
+    // Try loading from cache first if allowed
+    if (useCache) {
+      try {
+        const cachedDataString = await AsyncStorage.getItem('cachedData');
+        if (cachedDataString) {
+          console.log('Using cached data.');
+          setAppData(JSON.parse(cachedDataString));
+          setIsLoading(false); // Stop loading indicator if cache is used
+        }
+      } catch (cacheError) {
+        console.warn('Error reading cache:', cacheError);
+      }
     }
 
+    // Fetch fresh data from API (using placeholders)
+    try {
+      const results = await Promise.allSettled([
+        getFeaturedDestinations(),
+        getUpcomingEvents(),
+        getTopRatedRestaurants(),
+        getRecommendedHotels(),
+        getPopularAttractions(),
+      ]);
 
-  // Get user's first name for greeting
-  const userFirstName = userData?.fullName ? userData.fullName.split(' ')[0] : (currentUser?.email ? currentUser.email.split('@')[0] : '');
+      const [
+        featuredDestinationsResult,
+        upcomingEventsResult,
+        topRatedRestaurantsResult,
+        recommendedHotelsResult,
+        popularAttractionsResult,
+      ] = results;
+
+      // Helper to get value or default to empty array on failure
+      const getValueOrDefault = (result, key, defaultValue = []) => // Added key param
+        result.status === 'fulfilled' ? result.value : (appData?.[key] || defaultValue); // Fallback to existing appData if fetch fails
+
+
+      const data = {
+        featuredDestinations: getValueOrDefault(featuredDestinationsResult, 'featuredDestinations', []),
+        upcomingEvents: getValueOrDefault(upcomingEventsResult, 'upcomingEvents', []),
+        topRatedRestaurants: getValueOrDefault(topRatedRestaurantsResult, 'topRatedRestaurants', []),
+        recommendedHotels: getValueOrDefault(recommendedHotelsResult, 'recommendedHotels', []),
+        popularAttractions: getValueOrDefault(popularAttractionsResult, 'popularAttractions', []),
+        // Keep static data from initialMockData
+        localCulture: initialMockData.localCulture,
+        historicalSites: initialMockData.historicalSites,
+        beachesCoastal: initialMockData.beachesCoastal,
+        outdoorActivities: initialMockData.outdoorActivities,
+        transportationInfo: initialMockData.transportationInfo,
+        emergencyContacts: initialMockData.emergencyContacts,
+      };
+
+      setAppData(data);
+      // Cache the newly fetched data
+      try {
+        // Only cache if data is meaningful (e.g., not just empty arrays from failed fetches)
+        if (data.featuredDestinations?.length || data.recommendedHotels?.length) {
+             await AsyncStorage.setItem('cachedData', JSON.stringify(data));
+             console.log('Data cached successfully.');
+        }
+      } catch (cacheError) {
+        console.error('Error caching data:', cacheError);
+      }
+
+      // TODO: Fetch real weather here
+      setWeather({ temp: '29°C', condition: 'Sunny', icon: 'weather-sunny' }); // Update weather if fetch succeeds
+
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      // If fetching fails and we don't have cached data, show error
+      if (!appData) {
+        Alert.alert('Error', 'Failed to load essential data. Please check your connection and try again.');
+      } else {
+        // If fetching fails but we *do* have cached data, inform the user
+        Alert.alert('Offline Mode', 'Could not refresh data. Displaying previously loaded information.');
+      }
+    } finally {
+      setIsLoading(false);
+      setRefreshing(false);
+    }
+  }, [appData, refreshing]); // Depend on appData and refreshing state
+
+  // Initial data load logic
+  useEffect(() => {
+    if (!isLoadingAuth && currentUser) {
+      fetchAllData(); // Fetch data (will try cache first)
+    } else if (!isLoadingAuth && !currentUser) {
+      // Handle logged out state - clear data, show login prompt etc.
+      setAppData(null);
+      setIsLoading(false);
+    }
+     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoadingAuth, currentUser]); // Run when auth state changes
+
+  // Load saved items from storage on mount
+  useEffect(() => {
+    const loadSavedItems = async () => {
+        try {
+            const savedKeys = await AsyncStorage.getItem('savedTripItems');
+            if (savedKeys) {
+                setSavedItems(new Set(JSON.parse(savedKeys)));
+            }
+        } catch (e) {
+            console.error("Failed to load saved items:", e);
+        }
+    };
+    loadSavedItems();
+  }, []);
+
+  // Persist saved items whenever they change
+  useEffect(() => {
+    // Avoid saving the initial empty set unnecessarily
+    const persistSavedItems = async () => {
+        try {
+            // Check if savedItems actually changed before writing
+            const currentSaved = await AsyncStorage.getItem('savedTripItems');
+            const newSavedString = JSON.stringify([...savedItems]);
+            if (currentSaved !== newSavedString) {
+                await AsyncStorage.setItem('savedTripItems', newSavedString);
+                 console.log("Saved items persisted.");
+            }
+        } catch (e) {
+            console.error("Failed to save trip items:", e);
+        }
+    };
+    // Only run if savedItems is not the initial empty set, or if it has been loaded
+     if (savedItems.size > 0 || AsyncStorage.getItem('savedTripItems')) {
+        persistSavedItems();
+     }
+  }, [savedItems]);
+
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchAllData(false); // Force fetch fresh data, don't rely on cache first
+  }, [fetchAllData]);
+
+  // Trip Planner Save/Unsave Logic
+  const toggleSaveItem = useCallback((item, type) => {
+    const key = `${type}_${item.id}`;
+    setSavedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+        Alert.alert('Removed', `${item.name} removed from your trip plan.`);
+      } else {
+        newSet.add(key);
+        Alert.alert('Saved', `${item.name} added to your trip plan!`);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // --- Render Helpers ---
+
+  const renderSaveButton = useCallback((item, type, iconColor = Colors.white) => {
+    const key = `${type}_${item.id}`;
+    const isSaved = savedItems.has(key);
+    return (
+      <TouchableOpacity
+        style={styles.saveButton}
+        onPress={() => toggleSaveItem(item, type)}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} // Increase tap area
+        accessibilityLabel={isSaved ? `Remove ${item.name} from saved items` : `Save ${item.name}`}
+      >
+        <Ionicons
+          name={isSaved ? 'bookmark' : 'bookmark-outline'}
+          size={22}
+          color={isSaved ? Colors.light.tint : iconColor} // Use tint color when saved
+          style={styles.saveIcon}
+        />
+      </TouchableOpacity>
+    );
+  }, [savedItems, toggleSaveItem, styles]); // Include styles if it uses themed colors directly
+
+  const renderDestinationCard = useCallback(
+    ({ item, index }) => ( // Added index for potential animation delay
+      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)}>
+        <AnimatedCard
+          style={styles.destinationCard}
+          onPress={() => navigation.navigate('DestinationDetail', { destinationId: item.id })} // Ensure 'DestinationDetail' exists
+          accessibilityLabel={`View details for ${item.name}`}
+          isDarkMode={isDarkMode}
+        >
+          <ImageBackground
+            source={{ uri: item.image || placeholderImage }}
+            style={styles.destinationImage}
+            resizeMode="cover"
+            // Add onError fallback for ImageBackground if needed
+             onError={(e) => console.log(`Failed to load image: ${item.image}`, e.nativeEvent.error)}
+          >
+            {/* Gradient Overlay */}
+            <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.destinationContent}>
+              <Text style={styles.destinationName} numberOfLines={1}>{item.name}</Text>
+              <Text style={styles.destinationDescription} numberOfLines={2}>{item.description}</Text>
+            </View>
+          </ImageBackground>
+          {renderSaveButton(item, 'destination')}
+        </AnimatedCard>
+      </Animated.View>
+    ),
+    [navigation, styles, isDarkMode, renderSaveButton]
+  );
+
+  const renderHotelCard = useCallback(
+    ({ item, index }) => (
+      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)}>
+        <AnimatedCard
+          style={styles.hotelCard}
+          onPress={() => navigation.navigate('HotelDetail', { hotelId: item.id })} // Ensure 'HotelDetail' exists
+          accessibilityLabel={`View details for ${item.name}, Rating ${item.rating}, Price ${item.price}`}
+          isDarkMode={isDarkMode}
+        >
+          <Image
+             source={{ uri: item.image || placeholderImage }}
+             style={styles.hotelImage}
+             resizeMode="cover"
+             onError={(e) => console.log(`Failed to load image: ${item.image}`, e.nativeEvent.error)}
+          />
+          <View style={styles.hotelInfo}>
+            <Text style={styles.hotelName} numberOfLines={1}>{item.name}</Text>
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={16} color={Colors.light.success} /> {/* Consistent color */}
+              <Text style={styles.hotelRating}>{item.rating} Stars</Text>
+            </View>
+            <Text style={styles.hotelPrice}>{item.price}/night</Text>
+          </View>
+          {renderSaveButton(item, 'hotel', isDarkMode ? Colors.dark.tint : Colors.light.tint)}
+        </AnimatedCard>
+      </Animated.View>
+    ),
+    [navigation, styles, isDarkMode, renderSaveButton]
+  );
+
+  const renderEventCard = useCallback(
+    ({ item, index }) => (
+      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)}>
+        <AnimatedCard
+          style={styles.eventCard}
+          onPress={() => navigation.navigate('EventDetail', { eventId: item.id })} // Ensure 'EventDetail' exists
+          accessibilityLabel={`View details for ${item.name} on ${item.date} at ${item.location}`}
+          isDarkMode={isDarkMode}
+        >
+           <Image
+             source={{ uri: item.image || placeholderImage }}
+             style={styles.eventImage}
+             resizeMode="cover"
+             onError={(e) => console.log(`Failed to load image: ${item.image}`, e.nativeEvent.error)}
+           />
+          <View style={styles.eventInfo}>
+            <Text style={styles.eventName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.eventDetails}>{item.date} • {item.location}</Text>
+          </View>
+          {/* No save button for events in this design, could be added */}
+        </AnimatedCard>
+      </Animated.View>
+    ),
+    [navigation, styles, isDarkMode]
+  );
+
+  const renderRestaurantCard = useCallback(
+    ({ item, index }) => (
+      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)}>
+        <AnimatedCard
+          style={styles.restaurantCard}
+          onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id })} // Ensure 'RestaurantDetail' exists
+          accessibilityLabel={`View details for ${item.name}, Cuisine: ${item.cuisine}, Price Range: ${item.priceRange}`}
+          isDarkMode={isDarkMode}
+        >
+           <Image
+             source={{ uri: item.image || placeholderImage }}
+             style={styles.restaurantImage}
+             resizeMode="cover"
+             onError={(e) => console.log(`Failed to load image: ${item.image}`, e.nativeEvent.error)}
+            />
+          <View style={styles.restaurantInfo}>
+            <Text style={styles.restaurantName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.restaurantDetails}>{item.cuisine} • {item.priceRange}</Text>
+            {/* Optional: Add rating here */}
+          </View>
+          {/* No save button for restaurants here, could be added */}
+        </AnimatedCard>
+      </Animated.View>
+    ),
+    [navigation, styles, isDarkMode]
+  );
+
+  const renderAttractionCard = useCallback(
+    ({ item, index }) => ( // Index for potential stagger animation
+      <Animated.View
+          style={{ width: styles.attractionCard.width, marginBottom: SPACING * 1.5 }} // Apply width and bottom margin here
+          entering={ZoomIn.delay(index * 50).duration(300)} // Staggered zoom-in
+      >
+          <AnimatedCard
+              style={{ flex: 1 }} // Card takes full space of the animated view container
+              onPress={() => navigation.navigate('AttractionDetail', { attractionId: item.id })} // Ensure 'AttractionDetail' exists
+              accessibilityLabel={`View details for ${item.name}`}
+              isDarkMode={isDarkMode}
+          >
+              <Image
+                 source={{ uri: item.image || placeholderImage }}
+                 style={styles.attractionImage}
+                 resizeMode="cover"
+                 onError={(e) => console.log(`Failed to load image: ${item.image}`, e.nativeEvent.error)}
+               />
+              <Text style={styles.attractionName} numberOfLines={1}>{item.name}</Text>
+              {/* Save button absolutely positioned within the card */}
+              {renderSaveButton(item, 'attraction', isDarkMode ? Colors.dark.tint : Colors.light.tint)}
+          </AnimatedCard>
+      </Animated.View>
+    ),
+    [navigation, styles, isDarkMode, renderSaveButton]
+  );
+
+
+ const renderInfoItem = useCallback((text, key) => (
+     <View style={styles.infoItemContainer} key={key}>
+         <Text style={styles.infoBullet}>•</Text>
+         <Text style={styles.infoItemText}>{text}</Text>
+     </View>
+ ), [styles]);
+
+
+  const renderOutdoorActivity = useCallback(
+    (item, index) => (
+      <Animated.View
+          key={item.id}
+          style={styles.outdoorActivityCardContainer} // Use container for spacing
+          entering={ZoomIn.delay(index * 80).springify()}
+      >
+        <AnimatedCard
+          style={styles.outdoorActivityCard} // Apply styling to the card itself
+          onPress={() => Alert.alert('Explore', `Find ${item.name} activities near you!`)}
+          accessibilityLabel={`Explore ${item.name} activities`}
+          isDarkMode={isDarkMode}
+        >
+          <Ionicons name={item.icon || 'help-circle-outline'} size={30} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
+          <Text style={styles.outdoorActivityText}>{item.name}</Text>
+        </AnimatedCard>
+      </Animated.View>
+    ),
+    [styles, isDarkMode]
+  );
+
+  const renderTransportInfo = useCallback(
+    (item, index, isLast) => (
+      <Animated.View key={item.id} entering={SlideInLeft.delay(index * 100).springify()}>
+        {/* Apply border style conditionally */}
+        <View style={[styles.transportItemContainer, isLast && { borderBottomWidth: 0 }]}>
+          <View style={styles.transportItem}>
+            <Ionicons name={item.icon || 'alert-circle-outline'} size={24} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} style={styles.transportIcon} />
+            <View style={styles.transportTextContainer}>
+              <Text style={styles.transportType}>{item.type}</Text>
+              <Text style={styles.transportDetails}>{item.details}</Text>
+            </View>
+          </View>
+        </View>
+      </Animated.View>
+    ),
+    [styles, isDarkMode]
+  );
+
+  const renderEmergencyContact = useCallback(
+    (item, index) => ( // Added index for animation delay
+      <Animated.View key={item.id} entering={SlideInLeft.delay(index * 100).springify()}>
+        <TouchableOpacity
+          style={styles.emergencyContactButton}
+          onPress={() => Linking.openURL(`tel:${item.number}`).catch(() => Alert.alert('Error', 'Could not open phone dialer.'))}
+          accessibilityLabel={`Call ${item.name} at ${item.number}`}
+          accessibilityRole="button"
+        >
+          <Ionicons name={item.icon || 'call-outline'} size={24} color={Colors.light.danger} /> {/* Consistent Danger color */}
+          <View style={styles.emergencyContactInfo}>
+            <Text style={styles.emergencyContactName}>{item.name}</Text>
+            <Text style={styles.emergencyContactNumber}>{item.number}</Text>
+          </View>
+          <Ionicons name="call-outline" size={24} color={Colors.light.danger} />
+        </TouchableOpacity>
+      </Animated.View>
+    ),
+    [styles] // No dark mode dependency here if colors are fixed
+  );
+
+  // --- Render Logic ---
+  if (isLoadingAuth) {
+    // Show loading animation while checking authentication
+    return <LoadingAnimation isDarkMode={isDarkMode} />;
+  }
+
+  if (!currentUser) {
+    // User is not logged in, show a prompt to log in
+    return (
+      <View style={styles.loadingContainer}>
+        <Ionicons name="log-in-outline" size={60} color={styles.loadingText.color} />
+        <Text style={styles.loadingText}>Please log in or sign up</Text>
+        <Text style={[styles.infoText, { textAlign: 'center', marginTop: SPACING }]}>
+            Log in to discover Bejaia, save your favorite places, and plan your trip!
+        </Text>
+        {/* Button to navigate to Login screen (ensure 'Login' screen exists in your navigator) */}
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={{ marginTop: SPACING * 2 }}>
+            <Text style={styles.linkText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // Show loading only if data is truly null initially AND not refreshing
+  if (isLoading && !appData && !refreshing) {
+    return <LoadingAnimation isDarkMode={isDarkMode} />;
+  }
+
+  // Handle case where initial fetch failed and no cache exists
+  if (!isLoading && !appData && !refreshing) {
+    return (
+      <View style={styles.loadingContainer}>
+         <Ionicons name="cloud-offline-outline" size={60} color={styles.loadingText.color} />
+        <Text style={styles.loadingText}>Oops! Something went wrong.</Text>
+         <Text style={[styles.infoText, { textAlign: 'center', marginTop: SPACING }]}>
+            We couldn't load the data for Bejaia. Please check your internet connection.
+        </Text>
+        <TouchableOpacity onPress={() => fetchAllData(false)} style={{ marginTop: SPACING * 2 }}>
+          <Text style={styles.linkText}>Tap to Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  // We have appData (or are refreshing), proceed with rendering the main screen
+  const userFirstName = userData?.fullName ? userData.fullName.split(' ')[0] : '';
   const formattedGreeting = `${greeting}${userFirstName ? ', ' + userFirstName : ''}!`;
+
+  // Check if essential data sections are available to render
+  // Use optional chaining ?. and nullish coalescing ?? [] to safely access data
+  const destinationsData = appData?.featuredDestinations ?? [];
+  const hotelsData = appData?.recommendedHotels ?? [];
+  const eventsData = appData?.upcomingEvents ?? [];
+  const restaurantsData = appData?.topRatedRestaurants ?? [];
+  const attractionsData = appData?.popularAttractions ?? [];
+  const outdoorData = appData?.outdoorActivities ?? [];
+  const cultureData = appData?.localCulture ?? [];
+  const historyData = appData?.historicalSites ?? [];
+  const beachesData = appData?.beachesCoastal ?? [];
+  const transportData = appData?.transportationInfo ?? [];
+  const emergencyData = appData?.emergencyContacts ?? [];
+
+  const hasDestinations = destinationsData.length > 0;
+  const hasHotels = hotelsData.length > 0;
+  const hasEvents = eventsData.length > 0;
+  const hasRestaurants = restaurantsData.length > 0;
+  const hasAttractions = attractionsData.length > 0;
+  const hasOutdoor = outdoorData.length > 0;
+  const hasInfo = cultureData.length > 0 || historyData.length > 0 || beachesData.length > 0;
+  const hasTransport = transportData.length > 0;
+  const hasEmergency = emergencyData.length > 0;
 
 
   return (
-    <View style={[styles.screenContainer, { backgroundColor: colors.background }]}>
-       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} translucent backgroundColor="transparent" /> {/* Make status bar transparent to see header image */}
+    <View style={styles.screenContainer}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        translucent
+        backgroundColor="transparent"
+      />
 
-      {/* --- Animated Header Background --- */}
-      <Animated.View style={[styles.headerBackgroundContainer, headerAnimatedStyle]}>
-        <ImageBackground source={{ uri: headerImageUrl }} style={styles.headerImageBackground} resizeMode="cover">
-            {/* Overlay for darkening/tinting */}
-            <Animated.View style={[styles.headerImageOverlay, headerImageAnimatedStyle]} />
-            {/* Header Text Content */}
-            <Animated.View style={[styles.headerTextContent, headerContentAnimatedStyle]}>
-                <Text style={styles.greetingText}>{formattedGreeting}</Text>
-                <Text style={styles.locationText}>{userLocation}</Text>
-                <Text style={styles.weatherText}>{weather}</Text>
-            </Animated.View>
-        </ImageBackground>
+      {/* --- Animated Header --- */}
+      <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
+        <Animated.Image
+            source={{ uri: headerImageUrl }}
+            style={[styles.headerImageBackground, headerImageAnimatedStyle]} // Apply transform to Image directly
+            resizeMode="cover"
+            onError={(e) => console.log(`Failed to load header image: ${headerImageUrl}`, e.nativeEvent.error)}
+        />
+         {/* Overlay must be separate */}
+         <Animated.View style={[styles.headerOverlay, headerImageAnimatedStyle]} />
+
+         <Animated.View style={[styles.headerContent, headerContentAnimatedStyle]}>
+             <Text style={styles.greetingText}>{formattedGreeting}</Text>
+             <Text style={styles.locationText}>{userLocation}</Text>
+             {weather && (
+               <View style={styles.weatherContainer}>
+                 <Ionicons name={weather.icon || 'thermometer-outline'} size={20} color={Colors.white} />
+                 <Text style={styles.weatherText}>{weather.temp}, {weather.condition}</Text>
+               </View>
+             )}
+         </Animated.View>
       </Animated.View>
 
-       {/* --- Animated Search Bar --- */}
-        <Animated.View style={[styles.searchBarOuterContainer, searchBarAnimatedStyle]}>
-            <View style={[styles.searchBarInner, { backgroundColor: colors.card, borderColor: colors.inputBorder }]}>
-                <Ionicons name="search-outline" size={22} color={colors.secondaryText} style={styles.searchIcon} />
-                <TextInput
-                    style={[styles.searchBar, { color: colors.text }]}
-                    placeholder={`Explore ${userLocation}...`}
-                    placeholderTextColor={colors.placeholder}
-                    // Placeholder for actual search functionality
-                    onPressIn={() => { console.log("Search bar pressed"); Alert.alert("Search", "Search functionality coming soon!"); }} // Example action on press
-                    editable={false} // Make it non-editable for now, just a visual element
-                />
-                <TouchableOpacity
-                    style={styles.searchFilterButton}
-                    accessibilityLabel="Filter search results"
-                    onPress={() => { console.log("Filter button pressed"); Alert.alert("Filter", "Filter options coming soon!"); }} // Example action
-                 >
-                     <Ionicons name="options-outline" size={24} color={colors.primaryGreen} />
-                </TouchableOpacity>
-            </View>
-        </Animated.View>
+      {/* --- Animated Search Bar --- */}
+      <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]}>
+        <Pressable
+          style={styles.searchBarInner}
+          onPress={() => Alert.alert('Search', 'Search functionality coming soon!')}
+          accessibilityRole="search"
+        >
+          <Ionicons name="search-outline" size={20} color={styles.searchInput.color} style={styles.searchIcon} />
+          {/* Use Text to display placeholder when not editable */}
+          <Text style={styles.searchInput} numberOfLines={1}>
+              Search Bejaia...
+          </Text>
+          <TouchableOpacity
+            style={styles.searchButton}
+            onPress={() => Alert.alert('Filter', 'Filter options coming soon!')}
+            accessibilityLabel="Filter options"
+          >
+            <Ionicons name="options-outline" size={20} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
+          </TouchableOpacity>
+        </Pressable>
+      </Animated.View>
 
       {/* --- Scrollable Content --- */}
-      {/* Use standard ScrollView for the content below the header */}
       <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
-        showsVerticalScrollIndicator={false}
         onScroll={scrollHandler}
-        scrollEventThrottle={16} // Important for smooth animation updates
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} colors={[colors.accent]} />}
+        scrollEventThrottle={16} // iOS optimized rate
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={isDarkMode ? Colors.dark.tint : Colors.light.tint}
+            title="Refreshing..." // iOS only
+            titleColor={isDarkMode ? Colors.dark.secondary : Colors.light.secondary} // iOS only
+            colors={[isDarkMode ? Colors.dark.tint : Colors.light.tint]} // Android progress color
+            progressBackgroundColor={isDarkMode ? Colors.dark.cardBackground : Colors.light.cardBackground} // Android BG color
+          />
+        }
       >
-        {/* Spacer to push content down below the fixed header */}
+        {/* Spacer View to push content below the absolute positioned header */}
         <View style={{ height: HEADER_MAX_HEIGHT }} />
+        {/* Extra space before the first section */}
+        <View style={{ height: SPACING }} />
 
-        {/* --- Sections Rendered Using appData --- */}
+        {/* Render sections only if data exists */}
+        {hasDestinations && (
+            <>
+                <SectionHeader
+                    title="Explore Bejaia"
+                    onSeeAll={() => navigation.navigate('Destinations')}
+                    isDarkMode={isDarkMode}
+                />
+                <FlatList
+                    data={destinationsData} // Use safe data variable
+                    keyExtractor={(item) => `dest-${item.id}`}
+                    renderItem={renderDestinationCard}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalListContent}
+                />
+            </>
+        )}
 
-        {/* Section "Iconic Locations" */}
-        <SectionHeader title="Iconic Locations" rightActionLabel="See All" onRightActionPress={() => { Alert.alert("See All", "See All Destinations coming soon!"); }} animatedStyle={firstSectionHeaderAnimatedStyle} />
-        <FlatList
-            data={appData.featuredDestinations}
-            keyExtractor={(item) => item.id}
-            renderItem={renderDestinationCard}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListPadding}
-            snapToInterval={screenWidth * 0.7 + SPACING * 1.5} // Adjust snap interval based on card width + margin
-            decelerationRate="fast"
-        />
+        {hasHotels && (
+            <>
+                <SectionHeader
+                    title="Stay in Comfort"
+                    onSeeAll={() => navigation.navigate('Hotels')}
+                    isDarkMode={isDarkMode}
+                />
+                <FlatList
+                    data={hotelsData} // Use safe data variable
+                    keyExtractor={(item) => `hotel-${item.id}`}
+                    renderItem={renderHotelCard}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalListContent}
+                />
+            </>
+        )}
 
-        {/* Section "Comfortable Stays" */}
-        <SectionHeader title="Comfortable Stays" rightActionLabel="View Hotels" onRightActionPress={() => navigation.navigate('Hotels', { hotels: appData.recommendedHotels })} /> {/* Navigate to Hotel List, passing data */}
-        <FlatList
-            data={appData.recommendedHotels}
-            keyExtractor={(item) => item.id}
-            renderItem={renderHotelCard}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListPadding}
-        />
+        {hasEvents && (
+            <>
+                <SectionHeader
+                    title="What's Happening"
+                    onSeeAll={() => navigation.navigate('Events')}
+                    isDarkMode={isDarkMode}
+                />
+                <FlatList
+                    data={eventsData} // Use safe data variable
+                    keyExtractor={(item) => `event-${item.id}`}
+                    renderItem={renderEventCard}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalListContent}
+                />
+            </>
+        )}
 
-        {/* Section "Upcoming Events" */}
-        <SectionHeader title="Upcoming Events" rightActionLabel="Calendar" onRightActionPress={() => { Alert.alert("Calendar", "Events Calendar coming soon!"); }} />
-         <FlatList
-             data={appData.upcomingEvents}
-             keyExtractor={(item) => item.id}
-             renderItem={renderEventCard}
-             horizontal
-             showsHorizontalScrollIndicator={false}
-             contentContainerStyle={styles.horizontalListPadding}
-         />
+        {hasRestaurants && (
+            <>
+                <SectionHeader
+                    title="Dine in Style"
+                    onSeeAll={() => navigation.navigate('Restaurants')}
+                    isDarkMode={isDarkMode}
+                />
+                <FlatList
+                    data={restaurantsData} // Use safe data variable
+                    keyExtractor={(item) => `rest-${item.id}`}
+                    renderItem={renderRestaurantCard}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.horizontalListContent}
+                />
+            </>
+        )}
 
-        {/* Section "Top Rated Eats" */}
-        <SectionHeader title="Top Rated Eats" rightActionLabel="Find Food" onRightActionPress={() => { Alert.alert("Find Food", "Restaurant List/Search coming soon!"); }} />
-        <FlatList
-            data={appData.topRatedRestaurants}
-            keyExtractor={(item) => item.id}
-            renderItem={renderRestaurantCard}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.horizontalListPadding}
-        />
+        {hasAttractions && (
+             <>
+                <SectionHeader
+                    title="Must-Visit Spots"
+                    onSeeAll={() => navigation.navigate('Attractions')}
+                    isDarkMode={isDarkMode}
+                />
+                {/* Use FlatList for Grid for potential optimizations */}
+                <FlatList
+                    data={attractionsData} // Use safe data variable
+                    keyExtractor={(item) => `attr-${item.id}`}
+                    renderItem={renderAttractionCard}
+                    numColumns={2} // Specify number of columns
+                    // Apply column wrapper style for spacing between columns in a row
+                    columnWrapperStyle={{ justifyContent: 'space-between', paddingHorizontal: SPACING * 0.75 }}
+                    // Apply content container style for overall padding/margin if needed
+                    contentContainerStyle={{ paddingHorizontal: SPACING * 0.75 }} // Overall horizontal padding for the grid
+                    showsVerticalScrollIndicator={false}
+                    scrollEnabled={false} // Disable scroll if inside ScrollView
+                 />
+             </>
+        )}
 
-        {/* Section "Must-See Attractions" */}
-        <SectionHeader title="Must-See Attractions" rightActionLabel="See All" onRightActionPress={() => { Alert.alert("See All", "See All Attractions coming soon!"); }}/>
-        <View style={styles.attractionGridContainer}>
-             {appData.popularAttractions.map((item, index) => renderAttractionCard({ item, index }))}
-        </View>
-
-
-         {/* Section "Get Active Outdoors" */}
-        <SectionHeader title="Get Active Outdoors" />
-        <View style={styles.outdoorActivitiesRow}>{appData.outdoorActivities.map((item, index) => renderOutdoorActivity(item, index))}</View>
-
-
-         {/* --- Info Sections Card --- */}
-         <AnimatedListItem index={appData.outdoorActivities.length + 1} delayMultiplier={100} initialOffset={50}> {/* Adjust index for animation delay */}
-            <StyledCard style={[styles.infoSectionCard, {backgroundColor: colors.card}]} accessibilityLabel="Information about local culture, history, and beaches">
-                <View style={[styles.infoSubSection, {borderBottomColor: colors.border}]}>
-                    <View style={styles.infoIconTitle}><Ionicons name="earth-outline" size={26} color={colors.primaryGreen} /><Text style={[styles.infoCardTitle, {color: colors.primaryGreen}]}>Culture & Traditions</Text></View>
-                     {appData.localCulture.map((item, index) => renderLocalCulture(item, index))}
+        {hasOutdoor && (
+            <>
+                <SectionHeader title="Get Active Outdoors" isDarkMode={isDarkMode} />
+                 <View style={styles.outdoorGridContainer}>
+                    {outdoorData.map((item, index) => renderOutdoorActivity(item, index))}
                 </View>
-                 <View style={[styles.infoSubSection, {borderBottomColor: colors.border}]}>
-                     <View style={styles.infoIconTitle}><Ionicons name="hourglass-outline" size={26} color={colors.primaryOrange} /><Text style={[styles.infoCardTitle, {color: colors.primaryOrange}]}>Historical Sites</Text></View>
-                     {appData.historicalSites.map((item, index) => renderHistoricalSite(item, index))}
-                 </View>
-                  <View style={styles.infoSubSectionNoBorder}>
-                     <View style={styles.infoIconTitle}><Ionicons name="water-outline" size={26} color={colors.primaryBlue} /><Text style={[styles.infoCardTitle, {color: colors.primaryBlue}]}>Beaches & Coastline</Text></View>
-                     {appData.beachesCoastal.map((item, index) => renderBeach(item, index))}
-                 </View>
-            </StyledCard>
-         </AnimatedListItem>
+            </>
+        )}
 
-        {/* Section "Getting Around Bejaia" */}
-        <SectionHeader title="Getting Around Bejaia" />
-        <View style={[styles.transportContainer, { backgroundColor: colors.primaryBlue + '10' }]}>{appData.transportationInfo.map((item, index) => renderTransportInfo(item, index))}</View>
 
-        {/* Section "Important Contacts" */}
-        <SectionHeader title="Important Contacts" />
-        <View style={styles.emergencyContactsContainer}>{appData.emergencyContacts.map((item, index) => renderEmergencyContact(item, index))}</View>
+        {hasInfo && (
+            <Animated.View entering={FadeIn.delay(300)}>
+              <View style={styles.infoCard}>
+                {cultureData.length > 0 && (
+                    <>
+                        <Text style={styles.infoTitle}>Culture & Traditions</Text>
+                        {cultureData.map((item) => renderInfoItem(item.description, `cult-${item.id}`))}
+                    </>
+                )}
+                {historyData.length > 0 && (
+                    <>
+                        <Text style={[styles.infoTitle, { marginTop: cultureData.length > 0 ? SPACING : 0 }]}>Historical Gems</Text>
+                        {historyData.map((item) => renderInfoItem(`${item.name}: ${item.description}`, `hist-${item.id}`))}
+                    </>
+                )}
+                {beachesData.length > 0 && (
+                   <>
+                        <Text style={[styles.infoTitle, { marginTop: (cultureData.length > 0 || historyData.length > 0) ? SPACING : 0 }]}>Beaches & Coastline</Text>
+                        {beachesData.map((item) => renderInfoItem(`${item.name}: ${item.description}`, `beach-${item.id}`))}
+                   </>
+                )}
+              </View>
+            </Animated.View>
+        )}
 
-        {/* Espaceur final pour éviter que le dernier élément colle au TabNavigator */}
-        <View style={styles.footerSpacer} />
+        {hasTransport && (
+             <>
+                <SectionHeader title="Getting Around Bejaia" isDarkMode={isDarkMode} />
+                <View style={[styles.infoCard, { paddingVertical: SPACING * 0.5 }]}>
+                    {transportData.map((item, index) =>
+                        renderTransportInfo(item, index, index === transportData.length - 1)
+                    )}
+                </View>
+             </>
+        )}
+
+        {hasEmergency && (
+            <>
+                <SectionHeader title="Important Contacts" isDarkMode={isDarkMode} />
+                <View style={{ marginHorizontal: SPACING * 1.5, marginBottom: SPACING }}>
+                    {emergencyData.map((item, index) => renderEmergencyContact(item, index))}
+                </View>
+            </>
+        )}
+
+        {/* Footer Spacer */}
+        <View style={{ height: SPACING * 5 }} />
 
       </Animated.ScrollView>
     </View>
   );
 }
 
+// Export the component
 export default HomeScreen;

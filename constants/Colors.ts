@@ -1,26 +1,36 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+// constants/Colors.js
+const tintColorLight = '#2962FF'; // Vibrant Blue
+const tintColorDark = '#448AFF'; // Brighter Blue
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const light = {
+  text: '#1A1A1A', // Dark Gray
+  background: '#F5F7FA', // Soft White
+  cardBackground: '#FFFFFF',
+  tint: tintColorLight,
+  secondary: '#757575', // Medium Gray
+  border: '#E0E0E0', // Light Gray
+  success: '#2E7D32', // Green
+  danger: '#D32F2F', // Red
+  placeholder: '#B0B0B0', // Gray
+  gradient: ['#4FC3F7', '#0288D1'], // Blue Gradient
+};
+
+const dark = {
+  text: '#E0E0E0', // Light Gray
+  background: '#121212', // Dark Gray
+  cardBackground: '#1E1E1E', // Darker Gray
+  tint: tintColorDark,
+  secondary: '#B0B0B0', // Light Gray
+  border: '#424242', // Medium Gray
+  success: '#4CAF50', // Green
+  danger: '#F44336', // Red
+  placeholder: '#616161', // Dark Gray
+  gradient: ['#1976D2', '#1565C0'], // Dark Blue Gradient
+};
 
 export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
+  light,
+  dark,
+  white: '#FFFFFF',
+  black: '#000000',
 };
