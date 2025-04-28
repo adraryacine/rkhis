@@ -1,19 +1,30 @@
-// dataService.js
+// services/dataService.js
 // This service handles fetching and saving data, primarily interacting with Firebase Firestore and Storage.
 // It also includes mock data as a fallback or initial structure.
 
 // Import necessary Firebase services from your firebase initialization file
-import { db, storage, auth } from '../firebase'; // Make sure this path is correct and includes auth, db, and storage
+// Make sure '../firebase' correctly exports 'db', 'storage', and 'auth' instances
+import { db, storage, auth } from '../firebase';
 
-// Import necessary Firestore functions
-import { collection, getDocs, doc, getDoc, query, orderBy, limit, setDoc } from 'firebase/firestore';
+// Import necessary Firestore functions (v9 syntax)
+import {
+    collection,
+    getDocs,
+    doc,
+    getDoc,
+    query,
+    orderBy,
+    limit,
+    setDoc, // Function to create/overwrite/merge a document
+    serverTimestamp, // Function to get a server-generated timestamp
+} from 'firebase/firestore';
 
-// Import necessary Storage functions
+// Import necessary Storage functions (v9 syntax)
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 
 // --- MOCK DATA (Temporary/Fallback) ---
-// This should match the structure expected by HomeScreen and Detail Screens
+// Keep mock data structured as it's used in the fetching fallbacks
 const mockData = {
     featuredDestinations: [
       { id: 'dest1', name: 'Bejaia City Exploration', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg/1280px-Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg', description: 'Historic port & vibrant center' },
@@ -82,216 +93,355 @@ const mockData = {
       { id: 'fire', name: 'Protection Civile', number: '14', icon: 'flame-outline' },
       { id: 'hospital', name: 'CHU Bejaia', number: '034xxxxxx', icon: 'git-network-outline' },
     ],
-};
-
-
-// --- Firestore Fetching Functions (PLACEHOLDERS) ---
-// Replace these with actual queries based on your Firestore structure
-// For now, they return mockData after a short delay
-const getFeaturedDestinations = async () => {
-  console.log("Fetching featured destinations (using mock data)...");
-  await new Promise(resolve => setTimeout(resolve, 500)); // Simulate network delay
-  // Example Firestore fetch (replace with your actual collection name and logic):
-  // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.featuredDestinations; }
-  // try {
-  //   const snapshot = await getDocs(collection(db, 'featuredDestinations'));
-  //   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  // } catch (error) {
-  //   console.error("Error fetching featured destinations from Firestore:", error);
-  //   return mockData.featuredDestinations; // Fallback to mock on error
-  // }
-  return mockData.featuredDestinations; // Always return mock for now
-};
-
-const getUpcomingEvents = async () => {
-   console.log("Fetching upcoming events (using mock data)...");
-   await new Promise(resolve => setTimeout(resolve, 500));
-   // Example Firestore fetch:
-   // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.upcomingEvents; }
-   // try {
-   //   const snapshot = await getDocs(query(collection(db, 'events'), orderBy('date'), limit(10)));
-   //   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-   // } catch (error) {
-   //   console.error("Error fetching upcoming events from Firestore:", error);
-   //   return mockData.upcomingEvents; // Fallback to mock on error
-   // }
-   return mockData.upcomingEvents; // Always return mock for now
-};
-
-const getTopRatedRestaurants = async () => {
-   console.log("Fetching top rated restaurants (using mock data)...");
-   await new Promise(resolve => setTimeout(resolve, 500));
-   // Example Firestore fetch:
-   // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.topRatedRestaurants; }
-   // try {
-   //   const snapshot = await getDocs(query(collection(db, 'restaurants'), orderBy('rating', 'desc'), limit(10))); // Example orderBy
-   //   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-   // } catch (error) {
-   //   console.error("Error fetching top rated restaurants from Firestore:", error);
-   //   return mockData.topRatedRestaurants; // Fallback to mock on error
-   // }
-   return mockData.topRatedRestaurants; // Always return mock for now
-};
-
-const getRecommendedHotels = async () => {
-   console.log("Fetching recommended hotels (using mock data)...");
-   await new Promise(resolve => setTimeout(resolve, 500));
-   // Example Firestore fetch:
-   // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.recommendedHotels; }
-   // try {
-   //   const snapshot = await getDocs(query(collection(db, 'hotels'), orderBy('price'), limit(10))); // Example orderBy
-   //   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-   // } catch (error) {
-   //   console.error("Error fetching recommended hotels from Firestore:", error);
-   //   return mockData.recommendedHotels; // Fallback to mock on error
-   // }
-   return mockData.recommendedHotels; // Always return mock for now
-};
-
-const getPopularAttractions = async () => {
-    console.log("Fetching popular attractions (using mock data)...");
-    await new Promise(resolve => setTimeout(resolve, 500));
-    // Example Firestore fetch:
-    // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.popularAttractions; }
-    // try {
-    //   const snapshot = await getDocs(query(collection(db, 'attractions'), orderBy('popularity', 'desc'), limit(10))); // Example orderBy
-    //   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    // } catch (error) {
-    //   console.error("Error fetching popular attractions from Firestore:", error);
-    //   return mockData.popularAttractions; // Fallback to mock on error
-    // }
-    return mockData.popularAttractions; // Always return mock for now
-};
-
-// Function to get details for a single attraction by ID
-const getAttractionDetails = async (id) => {
-     console.log(`Fetching details for attraction ID ${id} (using mock data)...`);
-     await new Promise(resolve => setTimeout(resolve, 300));
-     // Example Firestore fetch:
-     // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.popularAttractions.find(item => item.id === id) || mockData.historicalSites.find(item => item.id === id) || mockData.beachesCoastal.find(item => item.id === id) || null; }
-     // try {
-     //   const docRef = doc(db, 'attractions', id);
-     //   const docSnap = await getDoc(docRef);
-     //   if (docSnap.exists()) { return { id: docSnap.id, ...docSnap.data() }; }
-     //   else { console.log("No such document!"); return null; }
-     // } catch (error) {
-     //   console.error(`Error fetching attraction details for ID ${id} from Firestore:`, error);
-     //   return mockData.popularAttractions.find(item => item.id === id) || mockData.historicalSites.find(item => item.id === id) || mockData.beachesCoastal.find(item => item.id === id) || null; // Fallback
-     // }
-
-     // Mock data lookup (search across all mock data arrays for simplicity)
-     return mockData.popularAttractions.find(item => item.id === id)
-         || mockData.historicalSites.find(item => item.id === id)
-         || mockData.beachesCoastal.find(item => item.id === id)
-         || null;
-}
-
-// Function to get details for a single hotel by ID
-const getHotelDetails = async (id) => {
-     console.log(`Fetching details for hotel ID ${id} (using mock data)...`);
-     await new Promise(resolve => setTimeout(resolve, 300));
-     // Example Firestore fetch:
-     // if (!db) { console.warn("Firestore DB not initialized, returning mock data."); return mockData.recommendedHotels.find(item => item.id === id) || null; }
-     // try {
-     //   const docRef = doc(db, 'hotels', id);
-     //   const docSnap = await getDoc(docRef);
-     //   if (docSnap.exists()) { return { id: docSnap.id, ...docSnap.data() }; }
-     //   else { console.log("No such document!"); return null; }
-     // } catch (error) {
-     //    console.error(`Error fetching hotel details for ID ${id} from Firestore:`, error);
-     //    return mockData.recommendedHotels.find(item => item.id === id) || null; // Fallback
-     // }
-
-     // Mock data lookup
-     return mockData.recommendedHotels.find(item => item.id === id) || null;
-}
-
-// User Data Service (PLACEHOLDER - needs Firebase Authentication AND Firestore 'users' collection)
-// Assuming you have a 'users' collection where doc.id is the user's UID
-// import { setDoc } from 'firebase/firestore'; // setDoc is already imported at the top
-// import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'; // ref, uploadBytes, getDownloadURL are already imported at the top
-// import { auth } from './firebase'; // auth is already imported at the top
-
-
-const saveUserProfile = async (userId, profileData) => {
-    console.log(`Saving profile data for user ${userId}:`, profileData);
-     if (!db) {
-         console.error("Firestore DB not initialized. Cannot save profile.");
-         throw new Error("Database not available.");
-     }
-    try {
-         // Example Firestore set/update logic:
-         const userDocRef = doc(db, 'users', userId);
-         await setDoc(userDocRef, profileData, { merge: true }); // Use merge: true to update existing fields
-         console.log(`Profile data saved successfully for user ${userId}.`);
-         // In a real app, you'd ideally update the user data in AuthContext here
-         // This might require passing a setUserData function from AuthContext or using a global state solution (Redux)
-    } catch (error) {
-        console.error(`Error saving profile data for user ${userId}:`, error);
-        throw error; // Re-throw for component handling
+    // Mock user data for fallback and structure reference
+    mockUser: {
+        fullName: 'Mock User',
+        email: 'mock.user@example.com',
+        phoneNumber: '+213555123456', // Added mock phone number
+        joinDate: new Date(2023, 0, 1).toISOString(), // Use ISO string for mock date
+        profilePicUrl: null,
+        settings: { language: 'system', currency: 'DZD', theme: 'system' },
     }
 };
 
-const getUserProfile = async (userId) => {
-    console.log(`Fetching profile data for user ${userId} (using Firestore/mock fallback)...`);
-     if (!db) {
-         console.warn("Firestore DB not initialized. Using mock user data.");
-         // Fallback to mock user data if DB is not available
-          return {
-             id: userId,
-             fullName: 'Salim Dev (Mock)',
-             email: 'mock.user@example.com',
-             joinDate: new Date().toISOString(), // Use ISO string for mock date
-             profilePicUrl: null,
-             settings: { language: 'en', currency: 'USD', theme: 'system' },
-         };
-     }
+// --- Firestore Fetching Functions ---
+// These functions will *attempt* to fetch from Firestore first and fallback to mock data on error or empty result.
+
+/**
+ * Generic helper to fetch documents from a Firestore collection.
+ * @param {string} collectionName - The name of the Firestore collection.
+ * @param {Array<object>} mockFallbackData - Mock data to return on error or empty collection.
+ * @param {function} queryRefBuilder - Optional function to build the query (e.g., add orderBy, limit).
+ * @returns {Promise<Array<object>>} - A promise resolving with an array of documents.
+ */
+const fetchFromFirestore = async (collectionName, mockFallbackData, queryRefBuilder = (colRef) => colRef) => {
+    if (!db) {
+        console.warn(`Firestore DB not initialized for "${collectionName}", returning mock data.`);
+        return mockFallbackData;
+    }
     try {
-        // Example Firestore get logic:
+        const collectionRef = collection(db, collectionName);
+        const q = queryRefBuilder(collectionRef); // Apply custom query (orderBy, limit, etc.)
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            console.log(`No documents found in "${collectionName}", returning mock data.`);
+            // You might return [] here instead of mockFallbackData if you prefer
+            // an empty state from an empty collection. Returning mock is a stronger fallback.
+            return mockFallbackData;
+        }
+
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        console.log(`Successfully fetched ${data.length} documents from "${collectionName}".`);
+        return data;
+
+    } catch (error) {
+        console.error(`Error fetching data from "${collectionName}" Firestore:`, error);
+        return mockFallbackData; // Fallback to mock on any Firestore error
+    }
+};
+
+const getFeaturedDestinations = async () => {
+    // Example: Order by a 'priority' field and limit
+    return fetchFromFirestore('featuredDestinations', mockData.featuredDestinations,
+        (colRef) => query(colRef, orderBy('priority', 'asc'), limit(10)) // Adjust query as needed
+    );
+};
+
+const getUpcomingEvents = async () => {
+    // Example: Order by 'date' and limit
+    return fetchFromFirestore('events', mockData.upcomingEvents,
+        (colRef) => query(colRef, orderBy('date', 'asc'), limit(10)) // Adjust query as needed
+    );
+};
+
+const getTopRatedRestaurants = async () => {
+     // Example: Order by 'rating' descending and limit
+    return fetchFromFirestore('restaurants', mockData.topRatedRestaurants,
+        (colRef) => query(colRef, orderBy('rating', 'desc'), limit(10)) // Example orderBy
+    );
+};
+
+const getRecommendedHotels = async () => {
+    // Example: Order by 'rating' descending and limit
+    return fetchFromFirestore('hotels', mockData.recommendedHotels,
+         (colRef) => query(colRef, orderBy('rating', 'desc'), limit(10)) // Adjust query as needed
+    );
+};
+
+const getPopularAttractions = async () => {
+    // Example: Order by 'popularity' or 'name' and limit
+    return fetchFromFirestore('attractions', mockData.popularAttractions,
+        (colRef) => query(colRef, orderBy('name', 'asc'), limit(20)) // Adjust query as needed
+    );
+};
+
+// --- Firestore Detail Fetching Functions ---
+
+/**
+ * Generic helper to fetch a single document from a Firestore collection by ID.
+ * @param {string} collectionName - The name of the Firestore collection.
+ * @param {string} id - The document ID.
+ * @param {object|null} mockFallbackItem - Mock data item to return on error or if the document is not found.
+ * @returns {Promise<object|null>} - A promise resolving with the document data or null/mock.
+ */
+const fetchDetailFromFirestore = async (collectionName, id, mockFallbackItem) => {
+     if (!db) {
+         console.warn(`Firestore DB not initialized for "${collectionName}" detail, returning mock data.`);
+         return mockFallbackItem;
+     }
+     if (!id) {
+         console.error(`No ID provided for fetching ${collectionName} detail.`);
+         return null;
+     }
+     try {
+        const docRef = doc(db, collectionName, id);
+        const docSnap = await getDoc(docRef);
+
+        if (docSnap.exists()) {
+            console.log(`Successfully fetched detail for ${collectionName} ID ${id}.`);
+            return { id: docSnap.id, ...docSnap.data() };
+        } else {
+            console.log(`No document found for ${collectionName} ID ${id}, returning mock data.`);
+            return mockFallbackItem; // Fallback if specific document not found
+        }
+     } catch (error) {
+        console.error(`Error fetching ${collectionName} detail for ID ${id} from Firestore:`, error);
+        return mockFallbackItem; // Fallback on any Firestore error
+     }
+};
+
+
+const getAttractionDetails = async (id) => {
+     // Find the item in mock data for fallback (might be in different mock arrays)
+     const mockItem = mockData.popularAttractions.find(item => item.id === id)
+         || mockData.historicalSites.find(item => item.id === id)
+         || mockData.beachesCoastal.find(item => item.id === id)
+         || null;
+     // Assuming attractions, historicalSites, beaches are all in one 'attractions' collection with different types/fields in Firestore
+     // NOTE: If they are SEPARATE collections, you need to query each one here or have a different Firestore structure.
+     return fetchDetailFromFirestore('attractions', id, mockItem);
+};
+
+const getHotelDetails = async (id) => {
+    const mockItem = mockData.recommendedHotels.find(item => item.id === id) || null;
+    return fetchDetailFromFirestore('hotels', id, mockItem);
+};
+
+
+// --- User Data Service (Firestore 'users' collection) ---
+
+/**
+ * Saves (creates or updates) a user profile document in the 'users' collection.
+ * Uses the Firebase Auth UID as the document ID.
+ * @param {string} userId - The Firebase Authentication user ID.
+ * @param {object} profileData - Data to save (e.g., { fullName: '...', phoneNumber: '...', preferences: { ... } }).
+ */
+export const saveUserProfile = async (userId, profileData) => {
+    if (!db) {
+        console.error("Firestore DB not initialized. Cannot save profile.");
+        throw new Error("Database not available.");
+    }
+    if (!userId) {
+        console.error("Attempted to save user profile without a UID.");
+        throw new Error("User UID is required to save profile.");
+    }
+
+    console.log(`Attempting to save profile data for user ${userId}:`, profileData);
+
+    try {
+         const userDocRef = doc(db, 'users', userId);
+
+         // Fetch existing data to preserve fields not being updated and check for createdAt
+         const docSnap = await getDoc(userDocRef);
+         const existingData = docSnap.exists() ? docSnap.data() : {};
+
+         const dataToSet = {
+             ...profileData, // Include the data passed in (fullName, phoneNumber, preferences, etc.)
+             lastUpdated: serverTimestamp(), // Always update lastUpdated timestamp
+         };
+
+         // Only add createdAt if the document doesn't exist OR if the existing doc doesn't have it
+         // This handles initial creation by authService.register and ensures it's not overwritten later.
+         if (!docSnap.exists() || !existingData.createdAt) {
+             dataToSet.createdAt = serverTimestamp();
+              console.log("Adding createdAt timestamp.");
+         } else {
+             // If createdAt already exists, don't include it in dataToSet so merge:true doesn't touch it
+             // This means we don't need the line 'dataToSet.createdAt = serverTimestamp();' inside the if block.
+             // The check `!docSnap.exists() || !existingData.createdAt` is sufficient.
+             // If the document exists and has createdAt, we just proceed without adding createdAt to dataToSet.
+              console.log("createdAt timestamp already exists.");
+         }
+
+         // Important: Ensure preferences object is merged correctly if it exists in profileData
+         // setDoc with merge: true handles top-level fields like fullName, phoneNumber.
+         // If profileData includes { preferences: { language: 'fr' } }, merge true will:
+         // - If preferences doesn't exist, create it as { language: 'fr' }.
+         // - If preferences exists like { theme: 'dark' }, it becomes { theme: 'dark', language: 'fr' }.
+         // - If preferences exists like { language: 'en' }, it becomes { language: 'fr' }.
+         // This is exactly what we want for preferences.
+
+         await setDoc(userDocRef, dataToSet, { merge: true }); // Use merge: true
+
+         console.log(`Profile data saved successfully for user ${userId}.`);
+    } catch (error) {
+        console.error(`Error saving profile data for user ${userId}:`, error);
+        throw error; // Re-throw the error for handling in components/services
+    }
+};
+
+/**
+ * Fetches the user profile document from the 'users' collection.
+ * @param {string} userId - The Firebase Authentication user ID.
+ * @returns {Promise<object|null>} - The user profile data object (including id), or null if not found or error.
+ */
+export const getUserProfile = async (userId) => {
+     // Fallback to basic Auth user data if DB is not initialized
+     if (!db) {
+         console.warn("Firestore DB not initialized. Cannot fetch profile from Firestore.");
+         const currentUser = auth.currentUser;
+         if (currentUser && currentUser.uid === userId) {
+              console.warn("Returning basic Auth data as Firestore is unavailable.");
+              return {
+                 id: userId,
+                 email: currentUser.email || 'N/A',
+                 // Use Auth displayName if available, otherwise fallback
+                 fullName: currentUser.displayName || currentUser.email || 'User',
+                 phoneNumber: mockData.mockUser.phoneNumber, // Return mock phone as no real data source
+                 profilePicUrl: currentUser.photoURL || null,
+                 // Use Auth metadata for join date, fallback to mock date
+                 joinDate: currentUser.metadata?.creationTime ? new Date(currentUser.metadata.creationTime) : new Date(mockData.mockUser.joinDate),
+                 preferences: mockData.mockUser.settings, // Default/mock settings
+             };
+         }
+          console.error(`Cannot fetch profile for ${userId}: Database not available and Auth user doesn't match.`);
+          // Return null if DB not available and Auth user doesn't match requested UID
+          return null;
+     }
+    if (!userId) {
+        console.error("Attempted to fetch user profile without a UID.");
+        // If Auth is initialized but no userId is provided, return null
+        return null;
+    }
+
+    console.log(`Attempting to fetch profile data for user ${userId} from Firestore...`);
+
+    try {
         const userDocRef = doc(db, 'users', userId);
         const docSnap = await getDoc(userDocRef);
 
         if (docSnap.exists()) {
             console.log(`Profile data found for user ${userId}.`);
-            return { id: docSnap.id, ...docSnap.data() };
-        } else {
-            console.log(`No profile document found for user ${userId}. Returning basic data.`);
-             // Return basic data from auth object if no Firestore document exists
-             return {
+            const firestoreData = docSnap.data();
+
+            // Merge data from Auth (guaranteed to exist if currentUser is not null)
+            // with data from Firestore. Firestore data takes precedence for editable fields.
+            const currentUser = auth.currentUser;
+            const combinedData = {
+                 // Basic info from Auth (safe fallbacks)
                  id: userId,
-                 fullName: auth.currentUser?.displayName || auth.currentUser?.email || 'New User',
-                 email: auth.currentUser?.email || 'N/A',
-                 joinDate: auth.currentUser?.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toISOString() : 'Join date N/A',
-                 profilePicUrl: auth.currentUser?.photoURL || null,
-                 settings: { language: 'en', currency: 'USD', theme: 'system' }, // Default settings
-             };
+                 email: currentUser?.email || firestoreData.email || 'N/A', // Prefer Auth email
+                 profilePicUrl: currentUser?.photoURL || firestoreData.profilePicUrl || null, // Prefer Auth photoURL
+                 // Auth creation time (often more reliable for join date)
+                 joinDate: currentUser?.metadata?.creationTime ? new Date(currentUser.metadata.creationTime) : (firestoreData.createdAt?.toDate() || null), // Convert Firestore timestamp to Date
+
+                 // Profile-specific fields from Firestore (can be updated)
+                 // Prefer Firestore data, fallback to Auth displayName, then email, then 'User'
+                 fullName: firestoreData.fullName || currentUser?.displayName || currentUser?.email || 'User',
+                 phoneNumber: firestoreData.phoneNumber || null, // Phone number should come from Firestore profile
+                 preferences: firestoreData.preferences || {}, // Use Firestore preferences, fallback to empty object
+                 // Add other fields from firestoreData here
+            };
+
+            return combinedData;
+        } else {
+            console.log(`No profile document found for user ${userId} in Firestore.`);
+             // If document doesn't exist, return basic data from Auth object
+             const currentUser = auth.currentUser;
+             if (currentUser && currentUser.uid === userId) {
+                 console.log("Returning basic Auth data as Firestore doc is missing.");
+                 return {
+                     id: userId,
+                     email: currentUser.email || 'N/A',
+                     fullName: currentUser.displayName || currentUser.email || 'New User',
+                     phoneNumber: null, // No phone number if doc is missing
+                     profilePicUrl: currentUser.photoURL || null,
+                     joinDate: currentUser.metadata?.creationTime ? new Date(currentUser.metadata.creationTime) : null,
+                     preferences: {}, // Default empty preferences if doc is missing
+                 };
+             }
+             // If no Auth user matches either, something is wrong, return null
+             console.warn(`No Auth user found matching UID ${userId} either.`);
+             return null;
         }
     } catch (error) {
         console.error(`Error fetching profile data for user ${userId}:`, error);
-         // Fallback to basic data or null on error
-        return {
-            id: userId,
-            fullName: auth.currentUser?.displayName || auth.currentUser?.email || 'User',
-            email: auth.currentUser?.email || 'N/A',
-            joinDate: auth.currentUser?.metadata?.creationTime ? new Date(auth.currentUser.metadata.creationTime).toISOString() : 'Join date N/A',
-            profilePicUrl: auth.currentUser?.photoURL || null,
-             settings: { language: 'en', currency: 'USD', theme: 'system' },
-        };
+         // On error, attempt to return basic data from Auth if available
+        const currentUser = auth.currentUser;
+        if (currentUser && currentUser.uid === userId) {
+            console.warn("Returning basic Auth data due to Firestore fetch error.");
+             return {
+                 id: userId,
+                 email: currentUser.email || 'N/A',
+                 fullName: currentUser.displayName || currentUser.email || 'User',
+                 phoneNumber: null, // Assume phone number wasn't fetched if error
+                 profilePicUrl: currentUser.photoURL || null,
+                 joinDate: currentUser.metadata?.creationTime ? new Date(currentUser.metadata.creationTime) : null,
+                 preferences: {},
+             };
+        }
+         // If no Auth user matches, re-throw the error or return null
+        throw error; // Re-throw for caller handling
     }
 };
 
-// Keep the original getHotels function if it's used elsewhere,
-// although we are now using getRecommendedHotels for the list.
-// If this function is never used, you can remove it entirely.
-const getHotels = async () => {
-    console.log("Fetching hotels (using mock data)...");
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return mockData.recommendedHotels; // Or implement Firestore fetch
+
+// --- Storage Functions (PLACEHOLDERS) ---
+// Example of how you might upload a profile picture
+export const uploadProfilePicture = async (userId, imageUri, fileName = 'profile.jpg') => {
+    if (!storage) {
+        console.error("Firebase Storage not initialized. Cannot upload.");
+        throw new Error("Storage not available.");
+    }
+     if (!userId) {
+        console.error("Attempted to upload profile picture without a UID.");
+        throw new Error("User UID is required to upload picture.");
+    }
+
+    try {
+        // Fetch the image blob
+        const response = await fetch(imageUri);
+        const blob = await response.blob();
+
+        // Create a storage reference
+        const storageRef = ref(storage, `profilePictures/${userId}/${fileName}`); // Path example: /profilePictures/user_uid/profile.jpg
+
+        // Upload the blob
+        console.log(`Attempting to upload profile picture for user ${userId} to ${storageRef.fullPath}`);
+        const uploadResult = await uploadBytes(storageRef, blob);
+        console.log(`Upload successful. Snapshot:`, uploadResult.metadata);
+
+        // Get the download URL
+        const downloadURL = await getDownloadURL(uploadResult.ref);
+        console.log(`Profile picture download URL: ${downloadURL}`);
+
+        // Optionally, save the download URL to the user's Firestore profile
+        console.log("Saving profilePicUrl to Firestore...");
+        await saveUserProfile(userId, { profilePicUrl: downloadURL }); // Use saveUserProfile to merge
+        console.log("Profile picture URL saved to Firestore.");
+
+        return downloadURL;
+    } catch (error) {
+        console.error(`Error uploading profile picture for user ${userId}:`, error);
+        throw error; // Re-throw for caller handling
+    }
 };
 
 
+// Export functions that were not exported inline using 'export const'
 export {
-  getHotels, // Keep the original getHotels if it's used somewhere else
+  // Data Fetching Functions (Firestore first, then Mock fallback)
   getFeaturedDestinations,
   getUpcomingEvents,
   getTopRatedRestaurants,
@@ -299,7 +449,7 @@ export {
   getPopularAttractions,
   getAttractionDetails, // For detail screen
   getHotelDetails, // For detail screen
-  saveUserProfile, // For Profile Screen
-  getUserProfile, // For Profile Screen (Used by AuthContext)
-  // Add more data fetching functions as needed (e.g., getAttractions, getRestaurants)
+
+  // Export mock data if needed elsewhere for reference or pure mock screens
+  mockData // Optional export
 };

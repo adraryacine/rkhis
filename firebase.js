@@ -1,3 +1,4 @@
+// firebase.js // <-- Assuming this is the actual name of your file
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
@@ -16,15 +17,19 @@ const firebaseConfig = {
 let app;
 try {
   app = initializeApp(firebaseConfig);
+  console.log("Firebase app initialized successfully."); // Optional: Add a log on success
 } catch (e) {
     console.error("Firebase initialization error", e.message); //Log error properly
 }
 
 
 // Initialize Firebase Authentication and get a reference to the service
+// Ensure app is initialized before getting auth
 const auth = getAuth(app);
 
 // Initialize Cloud Firestore and get a reference to the service
+// Ensure app is initialized before getting firestore
 const db = getFirestore(app);
 
-export { auth, db };
+// MODIFIED: Export app along with auth and db
+export { app, auth, db }; // <--- Make sure app is listed here

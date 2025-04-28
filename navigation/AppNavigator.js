@@ -4,22 +4,26 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import {
-  useColorScheme, // Using React Native's hook for basic theme detection
+  useColorScheme,
   View,
   ActivityIndicator,
   Text,
   StyleSheet,
   Platform
 } from 'react-native';
+// No need to import NavigationContainer here if it's in App.js
 
 
-// Import the useAuth hook from our context
-import { useAuth } from '../contexts/AuthContext';
+// Import the useAuth hook
+import { useAuth } from '../contexts/AuthContext'; // Ensure this path is correct
+
+// Import the new SavedItemsProvider context
+import { SavedItemsProvider } from '../contexts/SavedItemsContext'; // Ensure this path is correct (Assuming named export)
 
 // Import Screens
 import HomeScreen from '../screens/HomeScreen';
 import MapScreen from '../screens/MapScreen';
-import HotelReservationScreen from '../screens/HotelReservationScreen';
+import HotelReservationScreen from '../screens/HotelReservationScreen'; // Assuming this is the list of Hotels
 import FavoritesScreen from '../screens/FavoritesScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -28,91 +32,131 @@ import SettingsScreen from '../screens/SettingsScreen';
 import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import HelpCenterScreen from '../screens/HelpCenterScreen';
+// Assuming these screens exist as defined in ProfileScreen listItemsData or linked elsewhere
+import ChangePasswordScreen from '../screens/ChangePasswordScreen'; // Assuming ChangePassword screen exists
+// REMOVED: import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
+// REMOVED: import AppearanceSettingsScreen from '../screens/AppearanceSettingsScreen';
+import AboutUsScreen from '../screens/AboutUsScreen'; // Added explicitly
 
-// NEW: Detail screens
+
+// NEW: List Screens (Ensure these imports are correct)
+import DestinationsScreen from '../screens/DestinationsScreen';
+import RestaurantsScreen from '../screens/RestaurantsScreen';
+import AttractionsScreen from '../screens/AttractionsScreen';
+
+// Existing/Placeholder Detail screens (Ensure these imports are correct)
 import HotelDetailScreen from '../screens/HotelDetailScreen';
 import AttractionDetailScreen from '../screens/AttractionDetailScreen';
+// You might have one generic DetailScreen or specific ones
+import DetailScreen from '../screens/DetailScreen'; // Assuming a generic one for others
+
 
 // Define Navigators
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Helper function to get consistent themed colors (Moved here or to a shared file)
+// Helper function to get consistent themed colors (Keep this if it's not in a shared file)
 const getThemedColors = (isDarkMode) => ({
-    background: isDarkMode ? '#1C1C1E' : '#F8F9FA',
-    card: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-    text: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-    secondaryText: isDarkMode ? '#8E8E93' : '#757575',
-    accent: isDarkMode ? '#0A84FF' : '#007AFF',
-    border: isDarkMode ? '#38383A' : '#E0E0E0',
-    // Add any other specific colors used in navigation headers/tabs
-    headerBackground: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-    headerText: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-    tabBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF', // Use background for tab bar background
+    background: isDarkMode ? '#000000' : '#F8F9FA', // Use pure black for dark mode background
+    card: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+    text: isDarkMode ? '#F2F2F7' : '#1A1A1A',
+    secondaryText: isDarkMode ? '#AEAEB2' : '#6B7280', // Match ProfileScreen secondaryText
+    accent: isDarkMode ? '#0A84FF' : '#007AFF', // Primary/Accent color
+    border: isDarkMode ? '#38383A' : '#E5E7EB', // Match ProfileScreen separator/border
+    headerBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
+    headerText: isDarkMode ? '#F2F2F7' : '#1A1A1A',
+    tabBackground: isDarkMode ? '#1C1C1E' : '#FFFFFF',
     tabActiveTint: isDarkMode ? '#0A84FF' : '#007AFF',
-    tabInactiveTint: isDarkMode ? '#8E8E93' : '#757575',
+    tabInactiveTint: isDarkMode ? '#8E8E93' : '#757575', // Match ProfileScreen default icon color
 });
 
 
 // Stack Navigator for the main app flow (after authentication)
+// This Stack should be wrapped by SavedItemsProvider
 function MainStack() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const colors = getThemedColors(isDarkMode);
 
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.headerBackground,
-          borderBottomWidth: 0,
-          shadowOpacity: 0,
-          elevation: 0,
-        },
-        headerTintColor: colors.headerText,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-        headerBackTitleVisible: false, // Often preferred on iOS
-        cardStyle: {
-            backgroundColor: colors.background,
-        },
-        headerShown: false, // Hide header by default, let individual screens manage
-      }}
-    >
-      {/* Main tab navigator is the entry point after auth */}
-      <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+    // SavedItemsProvider is here, so all screens in MainStack have access
+    <SavedItemsProvider>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: colors.headerBackground,
+            borderBottomWidth: 0,
+            shadowOpacity: 0,
+            elevation: 0,
+          },
+          headerTintColor: colors.headerText,
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+          headerBackTitleVisible: false,
+          cardStyle: {
+              backgroundColor: colors.background,
+          },
+          headerShown: false, // Hide header by default for the tab navigator screen
+        }}
+      >
+        {/* Main tab navigator is the entry point after auth */}
+        <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
 
-      {/* Individual screens accessible from tabs or other parts of the app */}
-      {/* Ensure these components are correctly imported and exported as default */}
-      <Stack.Screen name="HotelDetail" component={HotelDetailScreen} options={{ headerShown: true, title: 'Hotel Details' }} />
-      <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
-      <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
-      <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ headerShown: true, title: 'Terms of Service' }} />
-      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: true, title: 'Privacy Policy' }} />
-      <Stack.Screen name="HelpCenter" component={HelpCenterScreen} options={{ headerShown: true, title: 'Help Center' }} />
-      <Stack.Screen name="Hotels" component={HotelReservationScreen} options={{ headerShown: true, title: 'Hotels' }} />
+        {/* Individual screens accessible from tabs or other parts of the app */}
+        {/* NEW: Add the list screens */}
+        <Stack.Screen
+            name="Destinations"
+            component={DestinationsScreen}
+            options={{ headerShown: true, title: 'Explore Bejaia' }} // Show header
+        />
+        <Stack.Screen
+            name="Restaurants"
+            component={RestaurantsScreen}
+            options={{ headerShown: true, title: 'Restaurants' }} // Show header
+        />
+        <Stack.Screen
+            name="Attractions"
+            component={AttractionsScreen}
+            options={{ headerShown: true, title: 'Attractions' }} // Show header
+        />
+         <Stack.Screen
+            name="Hotels" // Assuming HotelReservationScreen is your Hotels list screen
+            component={HotelReservationScreen}
+            options={{ headerShown: true, title: 'Hotels' }} // Show header
+        />
 
-      {/* Placeholder Screens (currently commented out) - Ensure they are also correctly imported/exported as default if uncommented */}
-      {/* <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} /> */}
-      {/* <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: 'Change Password' }} /> */}
-      {/* <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: true, title: 'Notification Settings' }} /> */}
-      {/* <Stack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ headerShown: true, title: 'Payment Methods' }} /> */}
-      {/* <Stack.Screen name="AboutUs" component={AboutUsScreen} options={{ headerShown: true, title: 'About Us' }} /> */}
-      {/* <Stack.Screen name="DataExport" component={DataExportScreen} options={{ headerShown: true, title: 'Data Export' }} /> */}
-      {/* <Stack.Screen name="DeleteAccount" component={DeleteAccountScreen} options={{ headerShown: true, title: 'Delete Account' }} /> */}
-      {/* <Stack.Screen name="LanguageSettings" component={LanguageSettingsScreen} options={{ headerShown: true, title: 'Language' }} /> */}
-      {/* <Stack.Screen name="CurrencySettings" component={CurrencySettingsScreen} options={{ headerShown: true, title: 'Currency' }} /> */}
-      {/* <Stack.Screen name="ThemeSettings" component={ThemeSettingsScreen} options={{ headerShown: true, title: 'Theme' }} /> */}
-      {/* <Stack.Screen name="DateTimeSettings" component={DateTimeSettingsScreen} options={{ headerShown: true, title: 'Date & Time' }} /> */}
-      {/* <Stack.Screen name="ClearCacheSettings" component={ClearCacheSettingsScreen} options={{ headerShown: true, title: 'Clear Cache' }} /> */}
-      {/* <Stack.Screen name="DataUsageSettings" component={DataUsageSettingsScreen} options={{ headerShown: true, title: 'Data Usage' }} /> */}
-      {/* <Stack.Screen name="ProfileVisibilitySettings" component={ProfileVisibilitySettingsScreen} options={{ headerShown: true, title: 'Profile Visibility' }} /> */}
-      {/* <Stack.Screen name="LocationTrackingSettings" component={LocationTrackingSettingsScreen} options={{ headerShown: true, title: 'Location Tracking' }} /> */}
-      {/* <Stack.Screen name="DataAnalyticsSettings" component={DataAnalyticsSettingsScreen} options={{ headerShown: true, title: 'Data Analytics' }} /> */}
-      {/* <Stack.Screen name="ContactUsSettings" component={ContactUsSettingsScreen} options={{ headerShown: true, title: 'Contact Us' }} /> */}
+        {/* Detail screens (Ensure these component names and imports are correct) */}
+        {/* Use your specific detail screens if you have them, or the generic one */}
+        <Stack.Screen name="DestinationDetail" component={DetailScreen} options={{ headerShown: true, title: 'Destination Details' }} />
+        <Stack.Screen name="HotelDetail" component={HotelDetailScreen} options={{ headerShown: true, title: 'Hotel Details' }} />
+        <Stack.Screen name="RestaurantDetail" component={DetailScreen} options={{ headerShown: true, title: 'Restaurant Details' }} />
+        <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
 
-    </Stack.Navigator>
+
+        {/* Settings and Legal Screens - These were already here */}
+        {/* Keeping SettingsScreen as it might be linked elsewhere */}
+        <Stack.Screen name="Settings" component={SettingsScreen} options={{ headerShown: true, title: 'Settings' }} />
+        <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ headerShown: true, title: 'Terms of Service' }} />
+        <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: true, title: 'Privacy Policy' }} />
+        <Stack.Screen name="HelpCenter" component={HelpCenterScreen} options={{ headerShown: true, title: 'Help Center' }} />
+        <Stack.Screen name="AboutUs" component={AboutUsScreen} options={{ headerShown: true, title: 'About Us' }} />
+
+
+        {/* Screens potentially linked from Profile or Settings */}
+        <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: true, title: 'Change Password' }} />
+        {/* REMOVED: NotificationSettingsScreen definition */}
+        {/* <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} options={{ headerShown: true, title: 'Notification Settings' }} /> */}
+        {/* REMOVED: AppearanceSettingsScreen definition */}
+        {/* <Stack.Screen name="AppearanceSettings" component={AppearanceSettingsScreen} options={{ headerShown: true, title: 'Appearance' }} /> */}
+
+
+        {/* Placeholder Screens (commented out) */}
+        {/* <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: true, title: 'Edit Profile' }} /> */}
+        {/* ... other commented out screens */}
+
+      </Stack.Navigator>
+    </SavedItemsProvider> // Close SavedItemsProvider
   );
 }
 
@@ -127,7 +171,6 @@ function BottomTabNavigator() {
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
-          // Map route names to Ionicons names
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home-outline';
           } else if (route.name === 'Map') {
@@ -137,33 +180,33 @@ function BottomTabNavigator() {
           } else if (route.name === 'Profile') {
              iconName = focused ? 'person' : 'person-outline';
           }
-
-          // You can return any component here as the icon
-          return <Ionicons name={iconName || 'alert-circle-outline'} size={size} color={color} />; // Default icon if name not matched
+          return <Ionicons name={iconName || 'alert-circle-outline'} size={size} color={color} />;
         },
-        tabBarActiveTintColor: colors.tabActiveTint, // Themed active color
-        tabBarInactiveTintColor: colors.tabInactiveTint, // Themed inactive color
+        tabBarActiveTintColor: colors.tabActiveTint,
+        tabBarInactiveTintColor: colors.tabInactiveTint,
         tabBarStyle: {
-             backgroundColor: colors.tabBackground, // Themed tab bar background
-             borderTopWidth: 0, // Remove top border
-             elevation: 8, // Android shadow
-             shadowColor: '#000', // iOS shadow
+             backgroundColor: colors.tabBackground,
+             borderTopWidth: 0,
+             elevation: 8,
+             shadowColor: '#000',
              shadowOffset: { width: 0, height: -2 },
              shadowOpacity: 0.1,
              shadowRadius: 4,
-             height: Platform.OS === 'ios' ? 90 : 60, // Adjust height for iOS SafeArea
-             paddingBottom: Platform.OS === 'ios' ? 25 : 5, // Adjust padding for iOS SafeArea
+             height: Platform.OS === 'ios' ? 90 : 60,
+             paddingBottom: Platform.OS === 'ios' ? 25 : 5,
              paddingTop: 5,
         },
         tabBarLabelStyle: {
             fontSize: 12,
              fontWeight: '600',
         },
-        headerShown: false, // Hide header for screens inside the tab navigator; Stack Navigator handles the overall header if needed
+        // Headers for screens within the tab navigator are often defined here
+        // or individual screens can set headerShown: true/false
+        headerShown: false, // Headers are handled by the MainStack or individual screens
       })}
     >
       {/* Screens shown in the bottom tab bar */}
-      {/* Ensure these components are correctly imported and exported as default */}
+      {/* headerShown is set to false here because the header is part of the MainStack */}
       <Tab.Screen name="Home" component={HomeScreen} options={{ title: 'Explore' }} />
       <Tab.Screen name="Map" component={MapScreen} options={{ title: 'Map' }} />
       <Tab.Screen name="Favorites" component={FavoritesScreen} options={{ title: 'Favorites' }} />
@@ -177,23 +220,24 @@ function BottomTabNavigator() {
 function AuthStack() {
    const colorScheme = useColorScheme();
    const isDarkMode = colorScheme === 'dark';
-   const colors = getThemedColors(isDarkMode); // Use the same color helper
+   const colors = getThemedColors(isDarkMode);
 
   return (
     <Stack.Navigator
       screenOptions={{
-        headerShown: false, // Hide header for auth screens
+        headerShown: false, // Hide header by default for auth flow screens
         cardStyle: {
-            backgroundColor: colors.background, // Themed background for auth screens
+            backgroundColor: colors.background,
         },
       }}
     >
-      {/* Ensure these components are correctly imported and exported as default */}
+      {/* Auth screens */}
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="Register" component={RegisterScreen} />
-       {/* Include legal screens within AuthStack so they can be accessed pre-login */}
-       <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
-       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
+       {/* Include legal screens here if they are accessible pre-login */}
+       {/* Added headerShown: true for these legal screens in AuthStack */}
+       <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} options={{ headerShown: true, title: 'Terms of Service' }} />
+       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} options={{ headerShown: true, title: 'Privacy Policy' }} />
        {/* Forgot Password screen could go here */}
        {/* <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} /> */}
     </Stack.Navigator>
@@ -201,10 +245,12 @@ function AuthStack() {
 }
 
 // Main App Navigator: Switches between Auth and Main flow based on authentication status
+// This component does NOT contain NavigationContainer, it assumes it's wrapped by it in App.js
 function AppNavigator() {
     // Use the useAuth hook to get the current authentication state
+    // useAuth needs access to AuthContext, so AuthProvider must be higher up (in App.js)
     const { currentUser, isLoadingAuth } = useAuth();
-    const colorScheme = useColorScheme(); // Needed here for themed loading screen
+    const colorScheme = useColorScheme();
     const isDarkMode = colorScheme === 'dark';
     const colors = getThemedColors(isDarkMode);
 
@@ -212,24 +258,27 @@ function AppNavigator() {
     // Show a loading screen while the auth state is being determined
     if (isLoadingAuth) {
          // Basic loading view (can be replaced with a dedicated SplashScreen component)
-        return (
-            <View style={[styles.loadingContainer, {backgroundColor: colors.background}]}>
-                <ActivityIndicator size="large" color={colors.accent} />
-                <Text style={[styles.loadingText, {marginTop: 10, fontSize: 16, color: colors.secondaryText}]}>Loading app...</Text>
-            </View>
+         // This view assumes it's inside NavigationContainer and AuthProvider
+         return (
+             <View style={[styles.loadingContainer, {backgroundColor: colors.background}]}>
+                 <ActivityIndicator size="large" color={colors.accent} />
+                 <Text style={[styles.loadingText, {marginTop: 10, fontSize: 16, color: colors.secondaryText}]}>Loading app...</Text>
+             </View>
         );
     }
 
   return (
-      // If currentUser exists (user is logged in), render the MainStack.
-      // Otherwise, render the AuthStack.
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-        {currentUser ? (
-            <Stack.Screen name="App" component={MainStack} />
-        ) : (
-            <Stack.Screen name="Auth" component={AuthStack} />
-        )}
-    </Stack.Navigator>
+      // This Stack decides between Auth and App flow
+      // It assumes it is wrapped by NavigationContainer AND AuthProvider
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+          {currentUser ? (
+              // If logged in, show the Main app flow (including tabs and lists/details)
+              <Stack.Screen name="App" component={MainStack} />
+          ) : (
+              // If not logged in, show the Authentication flow
+              <Stack.Screen name="Auth" component={AuthStack} />
+          )}
+      </Stack.Navigator>
   );
 }
 
@@ -246,4 +295,5 @@ const styles = StyleSheet.create({
 });
 
 
+// Export the main AppNavigator component
 export default AppNavigator;

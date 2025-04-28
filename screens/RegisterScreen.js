@@ -1,5 +1,5 @@
 // screens/RegisterScreen.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Import useEffect
 import {
   View,
   Text,
@@ -12,22 +12,26 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
-  SafeAreaView, // Use SafeAreaView for top padding
+  SafeAreaView,
   ProgressBarAndroid, // Android specific for password strength
   ProgressViewIOS, // iOS specific for password strength
-  Image, // <-- Import Image
+  Image,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-// Corrected path based on your file structure: '../authService' not '../services/authService'
-import { register } from '../services/authService'; // Import register function
-// import { saveUserProfile } from '../dataService'; // Optional: import function to save user data immediately after registration
-import { useColorScheme } from 'react-native'; // For theming
+// Corrected path based on your file structure: '../authService'
+// import { register } from '../services/authService'; // We will modify this import below
+import { useColorScheme } from 'react-native';
+
+// Import the specific register function from authService
+// Make sure authService is set up to accept fullName and phoneNumber
+import { register as authRegister } from '../services/authService';
+
 
 const { width } = Dimensions.get('window');
 const SPACING = 15; // Consistent spacing unit
 
-// Helper function to get consistent themed colors
+// Helper function to get consistent themed colors (copied from your original)
 const getThemedColors = (isDarkMode) => ({
     background: isDarkMode ? '#000000' : '#E0F7FA', // Match AuthStack background
     card: isDarkMode ? '#1C1C1E' : '#FFFFFF',
@@ -42,7 +46,7 @@ const getThemedColors = (isDarkMode) => ({
     danger: isDarkMode ? '#FF453A' : '#FF3B30', // Red for weak password
 });
 
-// Helper function to get themed styles
+// Helper function to get themed styles (copied from your original, adjusted for new fields)
 const getThemedRegisterStyles = (colors) => StyleSheet.create({
   container: {
     flex: 1,
@@ -96,14 +100,22 @@ const getThemedRegisterStyles = (colors) => StyleSheet.create({
     paddingHorizontal: SPACING,
     marginBottom: SPACING * 1.5,
     height: 55,
+    backgroundColor: colors.card, // Ensure input background matches card
   },
   inputIcon: {
     marginRight: SPACING,
   },
+   phonePrefix: {
+        fontSize: 16,
+        color: colors.text,
+        marginRight: 4, // Small space between prefix and input
+   },
   input: {
     flex: 1,
     fontSize: 16,
     color: colors.text, // Color applied dynamically
+    paddingVertical: 0, // Remove default padding
+    paddingHorizontal: 0, // Remove default padding
   },
   passwordToggle: {
       padding: SPACING / 2,
@@ -112,7 +124,7 @@ const getThemedRegisterStyles = (colors) => StyleSheet.create({
     strengthMeterContainer: {
         width: '100%',
         marginBottom: SPACING * 1.5,
-        paddingHorizontal: SPACING, // Align with input padding
+        // Align with input padding - no horizontal padding needed here as it's inside formContainer
     },
     strengthFeedbackText: {
         fontSize: 12,
@@ -123,6 +135,7 @@ const getThemedRegisterStyles = (colors) => StyleSheet.create({
     },
     termsContainer: {
          marginBottom: SPACING * 2.5,
+         paddingHorizontal: SPACING, // Add horizontal padding to align text
     },
     optionText: {
         fontSize: 14,
@@ -181,13 +194,16 @@ function RegisterScreen() {
   const colors = getThemedColors(isDarkMode);
   const styles = getThemedRegisterStyles(colors);
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-   const [confirmPassword, setConfirmPassword] = useState(''); // State for confirmation
-  const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-   const [passwordStrength, setPasswordStrength] = useState(0); // 0-1 for strength meter
-   const [passwordFeedback, setPasswordFeedback] = useState(''); // Text feedback
+  // Add new state variables for full name and phone number
+   const [fullName, setFullName] = useState('');
+   const [email, setEmail] = useState('');
+   const [phoneNumber, setPhoneNumber] = useState('+213'); // Initialize with prefix
+   const [password, setPassword] = useState('');
+   const [confirmPassword, setConfirmPassword] = useState('');
+   const [isLoading, setIsLoading] = useState(false);
+   const [showPassword, setShowPassword] = useState(false);
+   const [passwordStrength, setPasswordStrength] = useState(0);
+   const [passwordFeedback, setPasswordFeedback] = useState('');
 
    // Simple password strength check (can be improved)
    const checkPasswordStrength = (pwd) => {
@@ -220,13 +236,26 @@ function RegisterScreen() {
    };
 
    // Recalculate password strength when the password input changes
-   React.useEffect(() => {
+   useEffect(() => { // Use useEffect here
        checkPasswordStrength(password);
    }, [password]);
 
+   // Handle phone number input change, enforcing the +213 prefix
+   const handlePhoneNumberChange = (text) => {
+       if (text.startsWith('+213') || text === '') {
+           setPhoneNumber(text);
+       } else {
+           // If user somehow bypasses and enters text not starting with +213,
+           // either reset or try to prepend. Resetting is simpler.
+           setPhoneNumber('+213');
+           Alert.alert('Invalid Input', 'Phone number must start with +213.');
+       }
+   };
+
 
   const handleRegister = async () => {
-    if (!email || !password || !confirmPassword) {
+    // Add checks for new fields
+    if (!fullName || !email || !phoneNumber || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields.');
       return;
     }
@@ -238,23 +267,28 @@ function RegisterScreen() {
          Alert.alert('Error', 'Passwords do not match.');
          return;
      }
+     // Add basic phone number validation
+     // Assumes +213 followed by at least 8 digits (common format in Algeria)
+     if (!phoneNumber.startsWith('+213') || phoneNumber.length < 11) { // +213 plus minimum 8 digits
+         Alert.alert('Error', 'Please enter a valid phone number starting with +213.');
+         return;
+     }
+
 
     setIsLoading(true); // Start loading for the registration action
     try {
-      const user = await register(email, password);
-      console.log("User registered, UID:", user.uid);
+        // Call the register function from authService with the new data
+        // Make sure your authService.register function accepts these parameters
+        const user = await authRegister(email, password, fullName, phoneNumber);
 
-      // TODO: Immediately save initial user data to Firestore after successful registration
-      // This is important to have a user document for profile data later
-      // Example: await saveUserProfile(user.uid, { email: user.email, createdAt: new Date() });
-      // Handle potential errors during profile creation if necessary
+        console.log("User registered and profile saved (via authService). UID:", user.uid);
 
-      Alert.alert('Success', 'Account created successfully! Please log in.');
-      navigation.navigate('Login'); // Go back to login after successful registration
+        Alert.alert('Success', 'Account created successfully! Please log in.');
+        navigation.navigate('Login'); // Go back to login after successful registration
     } catch (error) {
-      // Handle Firebase Auth errors
+      // Handle errors from authService (Firebase Auth errors or profile save errors)
       let errorMessage = 'Registration failed. Please try again.';
-       if (error.code) {
+       if (error.code) { // Check for Firebase Auth error codes
            switch (error.code) {
                case 'auth/invalid-email':
                    errorMessage = 'Invalid email format.';
@@ -264,7 +298,7 @@ function RegisterScreen() {
                    break;
                case 'auth/operation-not-allowed':
                     errorMessage = 'Email/Password accounts are not enabled. Please contact support.';
-                    break; // Should not happen if Firebase config is correct
+                    break;
                case 'auth/weak-password':
                    errorMessage = 'Password is too weak. Please choose a stronger password.';
                    break;
@@ -272,6 +306,12 @@ function RegisterScreen() {
                  errorMessage = `An unexpected error occurred: ${error.message}`;
                  break;
            }
+       } else if (error.message.includes("profile save failed")) { // Check for specific error message from authService if you implemented one
+            errorMessage = 'Account created but profile save failed. Please contact support.';
+       }
+       else {
+           // Generic error message for other errors
+            errorMessage = `An unexpected error occurred: ${error.message}`;
        }
       Alert.alert('Registration Error', errorMessage);
     } finally {
@@ -298,7 +338,7 @@ function RegisterScreen() {
              <View style={styles.authContent}>
                  {/* Replace with your app logo */}
                  <Image
-                     source={require('../assets/images/icon.png')} // Use your app icon (corrected path based on previous fix)
+                     source={require('../assets/images/icon.png')} // Use your app icon
                      style={styles.authLogo}
                      resizeMode="contain"
                  />
@@ -306,6 +346,22 @@ function RegisterScreen() {
                  <Text style={styles.authSubtitle}>Create your account to discover the best of Bejaia</Text>
 
                  <View style={styles.formContainer}>
+
+                     {/* Full Name Input */}
+                     <View style={[styles.inputContainer, { borderColor: colors.inputBorder }]}>
+                         <Ionicons name="person-outline" size={22} color={colors.secondaryText} style={styles.inputIcon} />
+                         <TextInput
+                             style={[styles.input, { color: colors.text }]}
+                             placeholder="Full Name"
+                             placeholderTextColor={colors.placeholder}
+                             autoCapitalize="words"
+                             onChangeText={setFullName}
+                             value={fullName}
+                              editable={!isLoading}
+                         />
+                     </View>
+
+                     {/* Email Input */}
                      <View style={[styles.inputContainer, { borderColor: colors.inputBorder }]}>
                          <Ionicons name="mail-outline" size={22} color={colors.secondaryText} style={styles.inputIcon} />
                          <TextInput
@@ -316,10 +372,30 @@ function RegisterScreen() {
                              autoCapitalize="none"
                              onChangeText={setEmail}
                              value={email}
-                              editable={!isLoading} // Disable input while loading
+                              editable={!isLoading}
                          />
                      </View>
 
+                     {/* Phone Number Input */}
+                     <View style={[styles.inputContainer, { borderColor: colors.inputBorder }]}>
+                         <Ionicons name="call-outline" size={22} color={colors.secondaryText} style={styles.inputIcon} />
+                         <Text style={[styles.phonePrefix, { color: colors.text }]}>+213</Text> {/* Display the prefix */}
+                         <TextInput
+                             style={[styles.input, { color: colors.text }]}
+                             placeholder="Phone Number (e.g., 555123456)" // Hint for local part
+                             placeholderTextColor={colors.placeholder}
+                             keyboardType="phone-pad"
+                             autoCapitalize="none"
+                             // We handle the prefix logic in the onChangeText handler
+                             onChangeText={(text) => handlePhoneNumberChange('+213' + text.replace('+213', ''))} // Only update if it starts with +213 or becomes empty
+                             value={phoneNumber.replace('+213', '')} // Display without the prefix for easier input
+                             editable={!isLoading}
+                             maxLength={11} // +213 (4 chars) + max 9 digits = 13 total, input displays 9, so max length is 9 for the part after +213
+                         />
+                     </View>
+
+
+                      {/* Password Input */}
                       <View style={[styles.inputContainer, { borderColor: colors.inputBorder }]}>
                          <Ionicons name="lock-closed-outline" size={22} color={colors.secondaryText} style={styles.inputIcon} />
                          <TextInput
@@ -329,7 +405,7 @@ function RegisterScreen() {
                              secureTextEntry={!showPassword}
                              onChangeText={setPassword}
                              value={password}
-                              editable={!isLoading} // Disable input while loading
+                              editable={!isLoading}
                          />
                           <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.passwordToggle} disabled={isLoading}>
                               <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={22} color={colors.secondaryText} />
@@ -361,6 +437,7 @@ function RegisterScreen() {
                      )}
 
 
+                     {/* Confirm Password Input */}
                      <View style={[styles.inputContainer, { borderColor: colors.inputBorder, marginBottom: SPACING * 2.5 }]}>
                          <Ionicons name="lock-closed-outline" size={22} color={colors.secondaryText} style={styles.inputIcon} />
                          <TextInput
@@ -370,7 +447,7 @@ function RegisterScreen() {
                              secureTextEntry={!showPassword} // Match visibility with password
                              onChangeText={setConfirmPassword}
                              value={confirmPassword}
-                              editable={!isLoading} // Disable input while loading
+                              editable={!isLoading}
                          />
                           {/* No separate toggle for confirm password */}
                      </View>
@@ -378,18 +455,18 @@ function RegisterScreen() {
 
                      {/* Terms and Privacy Links */}
                      <View style={styles.termsContainer}>
-                         <Text style={[styles.optionText, { color: colors.secondaryText, textAlign: 'center', marginLeft: 0 }]}> {/* Remove left margin from optionText here */}
+                         <Text style={[styles.optionText, { color: colors.secondaryText, textAlign: 'center', marginLeft: 0 }]}>
                              By signing up, you agree to our{' '}
                              <Text
                                  style={[styles.linkText, { color: colors.accent }]}
-                                 onPress={() => navigation.navigate('TermsOfService')}
+                                 onPress={() => navigation.navigate('TermsOfService')} // Make sure you have these routes
                              >
                                  Terms of Service
                              </Text>{' '}
                              and{' '}
                              <Text
                                  style={[styles.linkText, { color: colors.accent }]}
-                                 onPress={() => navigation.navigate('PrivacyPolicy')}
+                                 onPress={() => navigation.navigate('PrivacyPolicy')} // Make sure you have these routes
                              >
                                  Privacy Policy
                              </Text>.
@@ -423,7 +500,7 @@ function RegisterScreen() {
                  </View>
 
                   <View style={styles.loginLinkContainer}>
-                      <Text style={[styles.optionText, { color: colors.secondaryText, marginLeft: 0 }]}>Already have an account?</Text> {/* Remove left margin */}
+                      <Text style={[styles.optionText, { color: colors.secondaryText, marginLeft: 0 }]}>Already have an account?</Text>
                       <TouchableOpacity onPress={() => navigation.navigate('Login')} disabled={isLoading}>
                           <Text style={[styles.optionText, styles.linkText, { color: colors.accent, marginLeft: 5 }]}>Log In</Text>
                       </TouchableOpacity>

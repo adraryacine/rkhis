@@ -1,279 +1,247 @@
 // screens/AttractionDetailScreen.js
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  ActivityIndicator,
-  Alert,
-  Linking, // For map/website links
-  Platform,
-  TouchableOpacity, // For links/buttons
-} from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getAttractionDetails } from '../services/dataService'; // Assuming this function exists
-import { useColorScheme } from 'react-native';
 
-const SPACING = 15; // Consistent spacing unit
+// Import the detail fetching function
+import { getAttractionDetails } from '../services/dataService'; // <--- Import the specific detail fetch function
 
-// Helper function to get consistent themed colors
-const getThemedColors = (isDarkMode) => ({
-    background: isDarkMode ? '#1C1C1E' : '#F8F9FA',
-    card: isDarkMode ? '#2C2C2E' : '#FFFFFF',
-    text: isDarkMode ? '#FFFFFF' : '#1A1A1A',
-    secondaryText: isDarkMode ? '#8E8E93' : '#757575',
-    accent: isDarkMode ? '#0A84FF' : '#007AFF', // General accent
-    primaryGreen: isDarkMode ? '#4CAF50' : '#00796B', // Themed green
-    primaryBlue: isDarkMode ? '#2196F3' : '#01579B', // Themed blue
-    primaryOrange: isDarkMode ? '#FF9800' : '#BF360C', // Themed orange
-    primaryRed: isDarkMode ? '#FF453A' : '#C62828', // Themed red
-    border: isDarkMode ? '#38383A' : '#E0E0E0',
-});
 
-// Helper function to get themed styles
-const getThemedAttractionDetailStyles = (colors) => StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background, // Background color applied dynamically
+// --- LOCAL Re-definition of ALL Constants and Styles needed for THIS screen ---
+const SPACING = 16;
+// Include any other constants specific to THIS screen
+const Colors = {
+  light: {
+    text: '#111827',
+    background: '#ffffff',
+    tint: '#007AFF',
+    secondary: '#6b7280',
+    border: '#e5e7eb',
+    cardBackground: '#ffffff',
+    placeholder: '#9ca3af',
+    success: '#10b981',
+    danger: '#ef4444',
+    black: '#000000',
   },
-  centered: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: colors.background,
+  dark: {
+    text: '#ecf0f1',
+    background: '#121212',
+    tint: '#0A84FF',
+    secondary: '#a1a1aa',
+    border: '#374151',
+    cardBackground: '#1e1e1e',
+    placeholder: '#71717a',
+    success: '#34d399',
+    danger: '#f87171',
+    black: '#000000',
   },
-    scrollContent: {
-        paddingBottom: SPACING * 4,
-    },
-  loadingText: {
-      marginTop: SPACING,
-      fontSize: 16,
-      color: colors.secondaryText,
-  },
-  attractionImage: {
-      width: '100%',
-      height: 250, // Fixed height for image
-  },
-   card: {
-       marginHorizontal: SPACING,
-       marginTop: SPACING,
-       padding: SPACING * 1.5,
-       borderRadius: SPACING,
-       shadowColor: '#000',
-       shadowOffset: { width: 0, height: 2 },
-       shadowOpacity: 0.1,
-       shadowRadius: 4,
-       elevation: 3,
-       backgroundColor: colors.card,
-   },
-  attractionName: {
-      fontSize: 24,
-      fontWeight: 'bold',
-      marginBottom: SPACING * 0.8,
-      color: colors.text,
-  },
-   attractionDescription: {
-       fontSize: 16,
-       lineHeight: 24,
-       marginBottom: SPACING * 1.5,
-       color: colors.secondaryText,
-   },
-   sectionTitle: {
-       fontSize: 18,
-       fontWeight: 'bold',
-       marginBottom: SPACING * 0.8,
-       color: colors.text,
-   },
-    secondaryText: {
-       fontSize: 15,
-       lineHeight: 22,
-       color: colors.secondaryText,
-   },
-     infoSection: {
-         marginTop: SPACING * 1.5,
-         paddingTop: SPACING * 1.5,
-         borderTopWidth: 1,
-         borderTopColor: colors.border,
-     },
-     infoRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: SPACING * 0.8,
-        paddingVertical: SPACING * 0.5,
-     },
-     buttonPlaceholder: {
-        paddingVertical: SPACING,
-        borderRadius: SPACING * 0.8,
-        alignItems: 'center',
-         borderWidth: 1,
-         // Background and Border applied dynamically
-     },
-     linkText: {
-         fontSize: 16,
-         fontWeight: '600',
-         // Color applied dynamically
-     },
-     footerSpacer: {
-        height: SPACING * 4,
-     }
-});
+  white: '#ffffff',
+};
+const fallbackPlaceholderImage = 'https://via.placeholder.com/600x400/cccccc/969696?text=Image+Error'; // Larger placeholder
+
+
+// --- LOCAL Definition of getThemedStyles including ALL styles for THIS screen ---
+const getThemedStyles = (isDarkMode = false) => {
+    const colors = isDarkMode ? Colors.dark : Colors.light;
+    return StyleSheet.create({
+        screenContainer: {
+            flex: 1,
+            backgroundColor: colors.background,
+        },
+        contentContainer: { // Padding for ScrollView content
+             padding: SPACING,
+        },
+        loadingContainer: {
+            flex: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            padding: SPACING * 2,
+        },
+        loadingText: {
+            marginTop: SPACING,
+            fontSize: 16,
+            color: colors.tint,
+            fontWeight: '600',
+        },
+        errorContainer: {
+             flex: 1,
+             justifyContent: 'center',
+             alignItems: 'center',
+             padding: SPACING * 2,
+        },
+        errorText: {
+            marginTop: SPACING,
+            fontSize: 16,
+            color: colors.secondary,
+            textAlign: 'center',
+        },
+        image: {
+            width: '100%',
+            height: 250, // Fixed height for detail image
+            borderRadius: SPACING, // Match card border radius
+            marginBottom: SPACING * 1.5,
+            backgroundColor: colors.secondary, // Placeholder color
+        },
+        title: {
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.text,
+            marginBottom: SPACING * 0.5,
+        },
+         description: {
+             fontSize: 16,
+             color: colors.secondary,
+             marginBottom: SPACING * 1.5,
+         },
+        sectionTitle: {
+            fontSize: 20,
+            fontWeight: '600',
+            color: colors.text,
+            marginTop: SPACING,
+            marginBottom: SPACING * 0.75,
+             borderBottomWidth: 1,
+             borderBottomColor: colors.border,
+             paddingBottom: SPACING * 0.5,
+        },
+        infoRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: SPACING * 0.75,
+        },
+        infoIcon: {
+             marginRight: SPACING,
+        },
+        infoText: {
+            fontSize: 16,
+            color: colors.secondary,
+            flex: 1, // Allow text wrapping
+        },
+        secondaryText: {
+            color: colors.secondary,
+         }
+
+    });
+}
 
 
 function AttractionDetailScreen() {
   const route = useRoute();
+  const { attractionId } = route.params; // Get the ID from navigation params
+
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
-  const colors = getThemedColors(isDarkMode);
-  const styles = getThemedAttractionDetailStyles(colors);
+  const styles = getThemedStyles(isDarkMode);
 
-  const [attraction, setAttraction] = useState(null);
+  const [attractionData, setAttractionData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const { attractionId, attraction: initialAttractionData } = route.params || {}; // Get attractionId and potentially initial data
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchDetails = async () => {
-      setIsLoading(true);
-      try {
-        // Prefer initial data if passed
-         if (initialAttractionData) {
-             console.log("Using initial attraction data from params.");
-             setAttraction(initialAttractionData);
-         } else if (attractionId) {
-              // If only ID is passed, fetch full details from data service
-              console.log(`Fetching attraction details for ID: ${attractionId}`);
-              const fetchedAttraction = await getAttractionDetails(attractionId);
-              if (fetchedAttraction) {
-                  setAttraction(fetchedAttraction);
-                  console.log("Fetched attraction details:", fetchedAttraction);
+      const loadDetail = async () => {
+          setIsLoading(true);
+          setError(null);
+          try {
+              const data = await getAttractionDetails(attractionId); // <--- CALL THE IMPORTED DETAIL FETCH FUNCTION
+               if (data) {
+                 setAttractionData(data);
               } else {
-                  Alert.alert("Error", "Attraction details not found.");
-                   console.warn(`Attraction details not found for ID: ${attractionId}`);
+                 setError("Attraction not found.");
+                 setAttractionData(null);
               }
-         } else {
-             Alert.alert("Error", "No attraction ID or data provided.");
-              console.error("AttractionDetailScreen: No attraction ID or data in route params.");
-         }
-      } catch (error) {
-        console.error("Failed to fetch attraction details:", error);
-        Alert.alert("Error", "Failed to load attraction details.");
-      } finally {
-        setIsLoading(false);
+          } catch (err) {
+              console.error(`Error loading attraction details for ID ${attractionId}:`, err);
+              setError("Failed to load attraction details.");
+              setAttractionData(null);
+               Alert.alert("Error", "Failed to load attraction details data."); // Optionally show alert
+          } finally {
+              setIsLoading(false);
+          }
+      };
+
+      if (attractionId) { // Only fetch if an ID is provided
+         loadDetail();
+      } else {
+          setError("No Attraction ID provided.");
+          setIsLoading(false);
       }
-    };
 
-    fetchDetails();
-  }, [attractionId, initialAttractionData]); // Depend on route params
+  }, [attractionId]); // Re-fetch if attractionId changes
 
-  if (isLoading) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <ActivityIndicator size="large" color={colors.accent} />
-        <Text style={[styles.loadingText, {color: colors.secondaryText}]}>Loading attraction details...</Text>
-      </View>
-    );
-  }
 
-  if (!attraction) {
-    return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={[styles.loadingText, {color: colors.secondaryText}]}>Attraction not found.</Text>
-      </View>
-    );
-  }
-
-  // --- Feature Placeholders ---
-   const renderReviewsPlaceholder = () => (
-       <View style={[styles.card, {backgroundColor: colors.card}]}>
-           <Text style={[styles.sectionTitle, {color: colors.text}]}>Reviews & Ratings</Text>
-            <Text style={[styles.secondaryText, {color: colors.secondaryText, marginBottom: SPACING}]}>User reviews and ratings will appear here.</Text>
-            {/* Placeholder for Add Review Button */}
-            <TouchableOpacity
-               style={[styles.buttonPlaceholder, {backgroundColor: colors.accent + '20', borderColor: colors.accent}]}
-                onPress={() => Alert.alert("Coming Soon", "Submitting reviews is not yet available.")}
-            >
-                <Text style={[styles.linkText, {color: colors.accent}]}>Write a Review</Text>
-            </TouchableOpacity>
-       </View>
-   );
-
-  // --- End Feature Placeholders ---
-
-  return (
-    <ScrollView style={[styles.container, {backgroundColor: colors.background}]} contentContainerStyle={styles.scrollContent}>
-        {/* Attraction Image */}
-        {attraction?.image && ( // Use optional chaining
-             <Image source={{ uri: attraction.image }} style={styles.attractionImage} resizeMode="cover" />
-         )}
-
-        {/* Attraction Info Card */}
-        <View style={[styles.card, {backgroundColor: colors.card}]}>
-            <Text style={[styles.attractionName, {color: colors.text}]}>{attraction?.name || 'Attraction Details'}</Text> {/* Use optional chaining */}
-            {attraction?.description && <Text style={[styles.attractionDescription, {color: colors.secondaryText}]}>{attraction.description}</Text>} {/* Use optional chaining */}
-
-            {/* Placeholder for Location */}
-             <View style={styles.infoSection}>
-                 <Text style={[styles.sectionTitle, {color: colors.text}]}>Location</Text>
-                  <TouchableOpacity
-                      style={styles.infoRow}
-                       onPress={() => {
-                          // Example: Open location in Google Maps (replace with actual lat/lng if available)
-                          const address = attraction?.address || (attraction?.name ? attraction.name + ', Bejaia, Algeria' : 'Bejaia, Algeria'); // Use address if available, fallback
-                          const latLng = attraction?.latitude && attraction?.longitude ? `${attraction.latitude},${attraction.longitude}` : null;
-                           const mapUrl = latLng ? `geo:${latLng}?q=${encodeURIComponent(attraction?.name || '')}` : `geo:0,0?q=${encodeURIComponent(address)}`;
-                           Linking.openURL(mapUrl).catch(err => Alert.alert("Error", "Could not open map application."));
-                      }}
-                   >
-                     <Ionicons name="location-outline" size={20} color={colors.secondaryText} style={{ marginRight: SPACING }} />
-                     <Text style={[styles.secondaryText, {color: colors.secondaryText, flex: 1}]}>
-                         {attraction?.address || (attraction?.latitude && attraction?.longitude ? 'Tap to open in map.' : 'Location information not available. Tap to open map.')}
-                     </Text>
-                     {(attraction?.address || (attraction?.latitude && attraction?.longitude)) && <Ionicons name="open-outline" size={20} color={colors.accent} />}
-                  </TouchableOpacity>
+    // Render loading, error, or not found state
+   if (isLoading) {
+       return (
+            <View style={[styles.screenContainer, styles.loadingContainer]}>
+                <ActivityIndicator size="large" color={styles.loadingText.color} />
+                <Text style={styles.loadingText}>Loading Attraction Details...</Text>
             </View>
+       );
+   }
+
+    if (error) {
+        return (
+            <View style={[styles.screenContainer, styles.errorContainer]}>
+                 <Ionicons name="warning-outline" size={60} color={styles.secondaryText.color} />
+                <Text style={styles.errorText}>{error}</Text>
+            </View>
+        );
+    }
+
+     if (!attractionData) {
+         return (
+              <View style={[styles.screenContainer, styles.errorContainer]}>
+                 <Ionicons name="alert-circle-outline" size={60} color={styles.secondaryText.color} />
+                <Text style={styles.errorText}>Attraction data not available.</Text>
+            </View>
+         );
+    }
+
+   // Render the actual detail UI
+   return (
+       <SafeAreaView style={styles.screenContainer}>
+           <ScrollView contentContainerStyle={styles.contentContainer}>
+                <Image
+                    source={{ uri: attractionData.image || fallbackPlaceholderImage }}
+                    style={styles.image}
+                    resizeMode="cover"
+                     onError={(e) => console.log("Image error:", e.nativeEvent.error)} // Add error handling for image
+                />
+               <Text style={styles.title}>{attractionData.name}</Text>
+               {attractionData.description && <Text style={styles.description}>{attractionData.description}</Text>}
 
 
-            {/* Opening Hours */}
-             <View style={styles.infoSection}>
-                 <Text style={[styles.sectionTitle, {color: colors.text}]}>Opening Hours</Text>
-                 <View style={styles.infoRow}>
-                      <Ionicons name="time-outline" size={20} color={colors.secondaryText} style={{ marginRight: SPACING }} />
-                     <Text style={[styles.secondaryText, {color: colors.secondaryText}]}>{attraction?.openingHours || 'Information not available'}</Text>
-                 </View>
-             </View>
+               {/* Example sections - Add more based on your attraction data fields */}
+               {attractionData.address && (
+                   <>
+                       <Text style={styles.sectionTitle}>Location</Text>
+                       <View style={styles.infoRow}>
+                           <Ionicons name="location-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+                           <Text style={styles.infoText}>{attractionData.address}</Text>
+                       </View>
+                   </>
+               )}
 
-             {/* Entrance Fee */}
-             <View style={styles.infoSection}>
-                 <Text style={[styles.sectionTitle, {color: colors.text}]}>Entrance Fee</Text>
-                  <View style={styles.infoRow}>
-                       <Ionicons name="wallet-outline" size={20} color={colors.secondaryText} style={{ marginRight: SPACING }} />
-                      <Text style={[styles.secondaryText, {color: colors.secondaryText}]}>{attraction?.entranceFee || 'Information not available'}</Text>
-                  </View>
-             </View>
+                {attractionData.openingHours && (
+                     <View style={styles.infoRow}>
+                         <Ionicons name="time-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+                         <Text style={styles.infoText}>Opening Hours: {attractionData.openingHours}</Text>
+                     </View>
+                )}
 
+                {attractionData.entranceFee !== undefined && attractionData.entranceFee !== null && ( // Check for existence
+                     <View style={styles.infoRow}>
+                         <Ionicons name="pricetag-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+                         <Text style={styles.infoText}>Entrance Fee: {attractionData.entranceFee === 'Free' ? 'Free' : `${attractionData.entranceFee}`}</Text>
+                     </View>
+                )}
 
-            {/* Placeholder for Website Link (if exists) */}
-             {attraction?.website && ( // Use optional chaining
-                <View style={styles.infoSection}>
-                     <Text style={[styles.sectionTitle, {color: colors.text}]}>Website</Text>
-                      <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(attraction.website).catch(err => Alert.alert("Error", "Could not open website."))}>
-                          <Ionicons name="globe-outline" size={20} color={colors.secondaryText} style={{ marginRight: SPACING }} />
-                          <Text style={[styles.secondaryText, {color: colors.secondaryText}]}>{attraction.website}</Text>
-                           <Ionicons name="open-outline" size={20} color={colors.accent} />
-                      </TouchableOpacity>
-                 </View>
-             )}
+               {/* Add other sections like photos gallery, related activities, etc. */}
 
-        </View>
-
-        {/* Feature Placeholder Sections */}
-        {renderReviewsPlaceholder()}
-
-        <View style={styles.footerSpacer} />
-    </ScrollView>
-  );
+           </ScrollView>
+       </SafeAreaView>
+   );
 }
+
 
 export default AttractionDetailScreen;
