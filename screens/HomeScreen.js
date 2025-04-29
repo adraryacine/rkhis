@@ -1,3 +1,4 @@
+// screens/HomeScreen.js
 import React, { useState, useEffect, useCallback, useContext, createContext } from 'react';
 import {
   View,
@@ -34,7 +35,11 @@ import Animated, {
   FadeInUp,
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // Keep AsyncStorage for caching app data
+
+// IMPORT THE SAVED ITEMS CONTEXT HOOK
+import { useSavedItems } from '../contexts/SavedItemsContext'; // <-- USE THE CONTEXT HOOK (Adjust path)
+
 
 // --- Placeholder Colors ---
 const Colors = {
@@ -65,13 +70,13 @@ const Colors = {
   white: '#ffffff',
 };
 
-// --- Placeholder Auth Context ---
+// --- Placeholder Auth Context --- (Keep for mock data logic)
 const AuthContext = createContext(null);
 
-// Example Hook - Provides mock data
+// Example Hook - Provides mock data (Keep as is)
 export const useAuth = () => {
     // Simulate auth state
-    const [currentUser] = useState({ id: '123', email: 'user@example.com' }); // Assume logged in
+    const [currentUser] = useState({ id: 'P6jRrBnSjCeUl8erFyUttvn2MOu2', email: 'user@example.com' }); // Assume logged in
     const [userData] = useState({ fullName: 'Bejaia Explorer', preferences: {} }); // Mock user data
     const [isLoadingAuth] = useState(false); // Assume auth check is complete
 
@@ -79,6 +84,7 @@ export const useAuth = () => {
 };
 
 // Example Provider (Not strictly needed for this single screen, but good practice)
+// This AuthProvider should ideally wrap the SavedItemsProvider in your App.js
 export const AuthProvider = ({ children }) => {
   const authValue = useAuth(); // Use the hook to get the mock values
   return (
@@ -89,14 +95,13 @@ export const AuthProvider = ({ children }) => {
 };
 
 
-// --- Mock Data (Updated based on request) ---
+// --- Mock Data (Ensure valid icon names) ---
 const initialMockData = {
   featuredDestinations: [
     { id: 'dest1', name: 'Bejaia City Exploration', image: 'https://picsum.photos/seed/dest1/600/400', description: 'Historic port & vibrant center', tags: ['city', 'culture'] },
     { id: 'dest2', name: 'Aokas Golden Sands', image: 'https://picsum.photos/seed/dest2/600/400', description: 'Relax on the stunning coastline' },
     { id: 'dest3', name: 'Tichy Seaside Town', image: 'https://picsum.photos/seed/dest3/600/400', description: 'Charming coastal town life' },
   ],
-  // Upcoming Events section is removed from rendering, but keeping the mock data here for completeness or future use
   upcomingEvents: [], // Cleared as section is removed
   topRatedRestaurants: [
     { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://picsum.photos/seed/rest1/600/400', priceRange: '$$$' },
@@ -124,11 +129,11 @@ const initialMockData = {
     { id: 'beach1', name: 'Les Aiguades', description: 'Known for clear turquoise water, dramatic cliffs, and snorkeling.', latitude: 36.7700, longitude: 5.1400 },
     { id: 'beach2', name: 'Sakamody Beach', description: 'Popular spot with restaurants and water activities.', latitude: 36.7505, longitude: 5.0600 },
   ],
-  // Updated Outdoor Activities as requested
+  // Updated Outdoor Activities - FIX IONICON NAMES
   outdoorActivities: [
     { id: 'out1', name: 'Hiking', icon: 'walk-outline' },
-    { id: 'out2', name: 'Parapante', icon: 'airplane-outline' }, // Using airplane icon for parapente
-    { id: 'out3', name: 'Swimming', icon: 'swim-outline' }, // Using swim icon
+    { id: 'out2', name: 'Paragliding', icon: 'airplane-outline' }, // Using airplane icon for paragliding
+    { id: 'out3', name: 'Swimming', icon: 'water-outline' }, // FIX: Use water-outline or similar valid icon
   ],
   transportationInfo: [
     { id: 'trans1', type: 'City Buses (ETUB)', details: 'Affordable network, check routes beforehand.', icon: 'bus-outline' },
@@ -141,7 +146,7 @@ const initialMockData = {
   ],
 };
 
-// --- Placeholder Data Fetching Functions ---
+// --- Placeholder Data Fetching Functions --- (Keep as is)
 const MOCK_DELAY = 500; // Simulate network latency
 
 const getFeaturedDestinations = () => new Promise(resolve => setTimeout(() => resolve(initialMockData.featuredDestinations), MOCK_DELAY));
@@ -170,7 +175,7 @@ const headerImageUrl = 'https://picsum.photos/seed/bejaia_main_header/1200/800';
 const fallbackPlaceholderImage = 'https://via.placeholder.com/300x200/cccccc/969696?text=Image+Error';
 
 
-// --- Themed Styles ---
+// --- Themed Styles --- (Keep as is, ensure correct icon names in use)
 const getThemedStyles = (isDarkMode = false) => {
   const colors = isDarkMode ? Colors.dark : Colors.light;
   const dynamicCardShadow = {
@@ -324,8 +329,7 @@ const getThemedStyles = (isDarkMode = false) => {
     destinationCard: {
       width: screenWidth * 0.75,
       height: screenHeight * 0.3,
-      marginRight: SPACING * 1.5,
-      backgroundColor: colors.border,
+      backgroundColor: colors.border, // Placeholder background
     },
     destinationImage: {
       flex: 1,
@@ -348,8 +352,7 @@ const getThemedStyles = (isDarkMode = false) => {
     // Hotel Card
     hotelCard: {
       width: screenWidth * 0.65,
-      marginRight: SPACING * 1.5,
-      backgroundColor: colors.border,
+      backgroundColor: colors.border, // Placeholder background
     },
     hotelImage: {
       width: '100%',
@@ -380,35 +383,10 @@ const getThemedStyles = (isDarkMode = false) => {
       color: colors.success,
       marginTop: SPACING * 0.25,
     },
-     // Event Card - Styles kept but not used in rendering anymore
-    eventCard: {
-      width: screenWidth * 0.55,
-      marginRight: SPACING * 1.5,
-      backgroundColor: colors.border,
-    },
-    eventImage: {
-      width: '100%',
-      height: screenHeight * 0.15,
-    },
-    eventInfo: {
-      padding: SPACING,
-    },
-    eventName: {
-      fontSize: 16,
-      fontWeight: '600',
-      color: colors.text,
-      marginBottom: SPACING * 0.25,
-    },
-    eventDetails: {
-      fontSize: 13,
-      color: colors.secondary,
-      marginTop: SPACING * 0.5,
-    },
-    // Restaurant Card
+     // Restaurant Card
     restaurantCard: {
       width: screenWidth * 0.6,
-      marginRight: SPACING * 1.5,
-      backgroundColor: colors.border,
+       backgroundColor: colors.border, // Placeholder background
     },
     restaurantImage: {
       width: '100%',
@@ -431,11 +409,11 @@ const getThemedStyles = (isDarkMode = false) => {
     // Attraction Card (Grid Layout)
     attractionCardContainer: {
        width: (screenWidth - SPACING * 4.5) / 2,
-       marginBottom: SPACING * 1.5,
+       // No bottom margin here, it's handled by the FlatList columnWrapper
     },
     attractionCard: {
       flex: 1,
-      backgroundColor: colors.border,
+       backgroundColor: colors.border, // Placeholder background
     },
     attractionImage: {
       width: '100%',
@@ -489,14 +467,14 @@ const getThemedStyles = (isDarkMode = false) => {
     // Outdoor Activity Card
     outdoorActivityCardContainer: {
         width: (screenWidth - SPACING * 4.5) / 3, // Designed for 3 columns
-        padding: SPACING * 0.75,
+        padding: SPACING * 0.75, // Add padding to create space around card
     },
     outdoorActivityCard: {
-        flex: 1,
+        flex: 1, // Make card take up container space
         alignItems: 'center',
         justifyContent: 'center',
         padding: SPACING,
-        minHeight: 90,
+        minHeight: 90, // Ensure minimum height
     },
     outdoorActivityText: {
         fontSize: 14,
@@ -508,8 +486,8 @@ const getThemedStyles = (isDarkMode = false) => {
     outdoorGridContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      justifyContent: 'flex-start', // Align items to start
-      marginHorizontal: SPACING * 0.75,
+      justifyContent: 'space-between', // Distribute items evenly
+      marginHorizontal: SPACING * 0.75, // Offset for padding in itemContainer
       marginTop: SPACING * 0.5,
     },
     // Transport
@@ -563,34 +541,39 @@ const getThemedStyles = (isDarkMode = false) => {
     },
     // FlatList specific styles
     horizontalListContent: {
-      paddingHorizontal: SPACING * 1.5,
+      paddingHorizontal: SPACING * 1.5, // Add padding left/right
       paddingVertical: SPACING * 0.5,
     },
+    horizontalListItem: {
+         marginRight: SPACING * 1.5, // Add space between items horizontally
+    },
     attractionsColumnWrapper: {
-       justifyContent: 'space-between',
-       paddingHorizontal: SPACING * 0.75,
+       justifyContent: 'space-between', // Distribute columns evenly
+       paddingHorizontal: SPACING * 0.75, // Offset for itemContainer padding
+       marginBottom: SPACING * 1.5, // Add vertical space between rows
     },
     attractionsContentContainer: {
-        paddingHorizontal: SPACING * 0.75,
+        paddingHorizontal: SPACING * 0.75, // Add padding left/right
+         // No padding bottom here, main scroll view handles it
     },
     // Save Icon Button
     saveButton: {
         position: 'absolute',
         top: SPACING * 0.75,
         right: SPACING * 0.75,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        borderRadius: 15,
+        backgroundColor: 'rgba(0, 0, 0, 0.4)', // Semi-transparent dark background
+        borderRadius: 15, // Circle background
         padding: SPACING * 0.4,
-        zIndex: 5,
+        zIndex: 5, // Ensure button is above image/content
     },
     saveIcon: {
-        // Color set dynamically based on saved state
+        // Color set dynamically based on saved state below
     }
   });
 };
 
 
-// --- Reusable Components ---
+// --- Reusable Components --- (Keep as is)
 const SectionHeader = React.memo(({ title, onSeeAll, isDarkMode }) => {
   const styles = getThemedStyles(isDarkMode);
   return (
@@ -617,21 +600,26 @@ const AnimatedCard = React.memo(({ children, style, onPress, accessibilityLabel,
   }));
 
   return (
-    <Animated.View style={[styles.cardBase, style]}>
-        <Pressable
-            onPress={onPress}
-            onPressIn={() => (scale.value = 0.96)}
-            onPressOut={() => (scale.value = 1)}
-            accessibilityLabel={accessibilityLabel}
-            style={{ flex: 1 }}
-        >
-            <Animated.View style={[{flex: 1}, animatedStyle]}>
-                 {children}
-            </Animated.View>
-        </Pressable>
-    </Animated.View>
+    // Use Pressable for touch feedback and accessibility
+    <Pressable
+        onPress={onPress}
+        onPressIn={() => (scale.value = 0.96)}
+        onPressOut={() => (scale.value = 1)}
+        accessibilityLabel={accessibilityLabel}
+        style={({ pressed }) => [
+            styles.cardBase,
+            style,
+            // Optional: Add slight press visual feedback
+            { opacity: pressed ? 0.9 : 1 }
+        ]}
+    >
+        <Animated.View style={[{flex: 1}, animatedStyle]}>
+             {children}
+        </Animated.View>
+    </Pressable>
   );
 });
+
 
 const LoadingAnimation = ({ isDarkMode }) => {
     const styles = getThemedStyles(isDarkMode);
@@ -643,6 +631,7 @@ const LoadingAnimation = ({ isDarkMode }) => {
     );
 };
 
+
 // --- Main Home Screen ---
 function HomeScreen() {
   // Hooks initialized first
@@ -652,14 +641,18 @@ function HomeScreen() {
   const isDarkMode = colorScheme === 'dark';
   const styles = getThemedStyles(isDarkMode); // Get themed styles once
 
+  // --- Use Saved Items Context ---
+  // Get the helper function to check saved status and the function to toggle status
+  const { isItemSaved, toggleSaveItem } = useSavedItems(); // <-- USE THE CONTEXT HOOK
+
   const scrollY = useSharedValue(0);
   const [appData, setAppData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [userLocation] = useState('Bejaia'); // Could be dynamic later
   const [greeting, setGreeting] = useState('Hello');
-  const [weather, setWeather] = useState({ temp: '--°C', condition: 'Loading...', icon: 'sync-outline' }); // Default/Placeholder
-  const [savedItems, setSavedItems] = useState(new Set()); // Use Set for efficient lookups
+  // FIX: Use valid initial icon name
+  const [weather, setWeather] = useState({ temp: '--°C', condition: 'Loading...', icon: 'sync-outline' });
 
   // State for image loading errors (optional, for fallback UI)
   const [imageErrors, setImageErrors] = useState({});
@@ -695,36 +688,41 @@ function HomeScreen() {
           translateY: interpolate(
               scrollY.value,
               [0, HEADER_SCROLL_DISTANCE],
-              [0, 50],
+              [0, 50], // Move content up as header shrinks
               Extrapolate.CLAMP
           )
       }]
   }));
   const headerImageAnimatedStyle = useAnimatedStyle(() => ({
     transform: [
+      // Scale up the image slightly when scrolling down past 0
       { scale: interpolate(scrollY.value, [-HEADER_MAX_HEIGHT, 0], [1.8, 1], Extrapolate.CLAMP) },
+      // Translate the image down slightly as header shrinks (parallax effect)
       { translateY: interpolate(scrollY.value, [0, HEADER_SCROLL_DISTANCE], [0, HEADER_SCROLL_DISTANCE * 0.5], Extrapolate.CLAMP) },
     ],
   }));
-  const searchBarAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        translateY: interpolate(
-          scrollY.value,
-          [0, HEADER_SCROLL_DISTANCE],
-          [0, -(HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT - SPACING * 1.5)],
-          Extrapolate.CLAMP
-        ),
-      },
-    ],
-  }));
+   const searchBarAnimatedStyle = useAnimatedStyle(() => ({
+      transform: [
+        {
+          // Move the search bar up so it sticks below the min header height
+          translateY: interpolate(
+            scrollY.value,
+            [0, HEADER_SCROLL_DISTANCE],
+            [0, -(HEADER_MAX_HEIGHT - HEADER_MIN_HEIGHT - SPACING * 1.5)], // Adjusted translation
+            Extrapolate.CLAMP
+          ),
+        },
+      ],
+    }));
+
 
   // --- Effects ---
   useEffect(() => {
     const hour = new Date().getHours();
     setGreeting(hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening');
     // Placeholder weather
-    const placeholderWeather = { temp: '28°C', condition: 'Clear', icon: 'weather-sunny' };
+     // FIX: Use valid ionicon name
+    const placeholderWeather = { temp: '28°C', condition: 'Clear', icon: 'sunny-outline' }; // Changed weather-sunny to sunny-outline
     setWeather(placeholderWeather);
   }, []);
 
@@ -733,13 +731,15 @@ function HomeScreen() {
     if (!refreshing) setIsLoading(true);
     setImageErrors({}); // Reset image errors on fetch
 
+    let cachedData = null;
     if (useCache) {
       try {
         const cachedDataString = await AsyncStorage.getItem('cachedData');
         if (cachedDataString) {
           console.log('Using cached data.');
-          setAppData(JSON.parse(cachedDataString));
-          setIsLoading(false);
+          cachedData = JSON.parse(cachedDataString);
+          setAppData(cachedData);
+          // setIsLoading(false); // Keep loading true if we are fetching in background
         }
       } catch (cacheError) {
         console.warn('Error reading cache:', cacheError);
@@ -747,6 +747,7 @@ function HomeScreen() {
     }
 
     try {
+      // Fetch fresh data - use Promise.allSettled to avoid stopping on one error
       const results = await Promise.allSettled([
         getFeaturedDestinations(),
         getTopRatedRestaurants(),
@@ -754,72 +755,73 @@ function HomeScreen() {
         getPopularAttractions(),
       ]);
 
-      const [
-        featuredDestinationsResult,
-        topRatedRestaurantsResult,
-        recommendedHotelsResult,
-        popularAttractionsResult,
-      ] = results;
-
-       // Helper to get result value or fallback (from existing data or default array)
-      const getValueOrDefault = (result, key, defaultValue = []) =>
-        result.status === 'fulfilled' ? result.value : (appData?.[key] || defaultValue);
+      // Helper to get result value or fallback (from existing data or initial mock)
+      const getValueOrDefault = (result, key, defaultValue = []) => {
+         if (result.status === 'fulfilled') {
+             return result.value;
+         }
+         console.warn(`Failed to fetch ${key}:`, result.reason);
+         // Fallback: first try existing appData, then initialMockData
+         return appData?.[key] ?? initialMockData[key] ?? defaultValue;
+      };
 
 
       const data = {
-        featuredDestinations: getValueOrDefault(featuredDestinationsResult, 'featuredDestinations', initialMockData.featuredDestinations),
-        upcomingEvents: appData?.upcomingEvents ?? initialMockData.upcomingEvents, // Keep events data if cached/mocked, but won't be rendered
-        topRatedRestaurants: getValueOrDefault(topRatedRestaurantsResult, 'topRatedRestaurants', initialMockData.topRatedRestaurants),
-        recommendedHotels: getValueOrDefault(recommendedHotelsResult, 'recommendedHotels', initialMockData.recommendedHotels),
-        popularAttractions: getValueOrDefault(popularAttractionsResult, 'popularAttractions', initialMockData.popularAttractions),
+        featuredDestinations: getValueOrDefault(results[0], 'featuredDestinations'),
+        topRatedRestaurants: getValueOrDefault(results[1], 'topRatedRestaurants'),
+        recommendedHotels: getValueOrDefault(results[2], 'recommendedHotels'),
+        popularAttractions: getValueOrDefault(results[3], 'popularAttractions'),
         // These sections are read directly from initialMockData and don't need fetch results
         localCulture: initialMockData.localCulture,
         historicalSites: initialMockData.historicalSites,
         beachesCoastal: initialMockData.beachesCoastal,
-        outdoorActivities: initialMockData.outdoorActivities,
+        outdoorActivities: initialMockData.outdoorActivities, // Use updated mock data
         transportationInfo: initialMockData.transportationInfo,
         emergencyContacts: initialMockData.emergencyContacts,
       };
 
       setAppData(data);
+
+      // Cache the fetched data if successful
       try {
-        // Only cache if we got some successful data back (e.g., destinations or hotels)
-        if (data.featuredDestinations?.length || data.recommendedHotels?.length) {
+        // Only cache if we got some successful data back
+        if (data.featuredDestinations?.length || data.recommendedHotels?.length || data.popularAttractions?.length || data.topRatedRestaurants?.length) {
              await AsyncStorage.setItem('cachedData', JSON.stringify(data));
-             console.log('Data cached successfully.');
-        } else if (cachedDataString) {
-             // If fetch failed but we have cache, keep the cache
-             console.log('Fetch failed, keeping existing cache.');
+             console.log('Fresh data cached successfully.');
+        } else if (cachedData) {
+             // If fetch failed entirely but we have cache, log that we're keeping the cache
+             console.log('Fetch failed entirely, relying on existing cache.');
         }
       } catch (cacheError) {
         console.error('Error caching data:', cacheError);
       }
-      // Update weather after successful fetch simulation
-      setWeather({ temp: '29°C', condition: 'Sunny', icon: 'weather-sunny' });
+
+      // Update weather after successful fetch simulation (or keep previous if fetch failed)
+      // FIX: Use valid ionicon name
+      setWeather({ temp: '29°C', condition: 'Sunny', icon: 'sunny-outline' }); // Changed weather-sunny
 
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Unhandled error fetching data:', error);
       // If fetching failed AND we don't have appData (meaning cache also failed or didn't exist)
       if (!appData) {
         Alert.alert('Error', 'Failed to load essential data. Please check your connection and try again.');
+         // FIX: Use valid ionicon name for error
+         setWeather({ temp: '--°C', condition: 'Error', icon: 'cloud-offline-outline' });
       } else {
         // If fetching failed but we have cache, inform the user
         Alert.alert('Offline Mode', 'Could not refresh data. Displaying previously loaded information.');
-      }
-      // Ensure weather fallback if fetch totally failed and no data
-      if (!appData) {
-         setWeather({ temp: '--°C', condition: 'Error', icon: 'cloud-offline-outline' });
       }
     } finally {
       setIsLoading(false);
       setRefreshing(false);
     }
-  }, [appData, refreshing]); // Added appData to dependencies for getValueOrDefault fallback
-
+  }, [appData, refreshing]); // Depend on appData for fallback logic
 
   useEffect(() => {
     if (!isLoadingAuth && currentUser) {
       // Fetch data when authenticated user is loaded
+      // Note: The SavedItemsContext also loads saved items here.
+      // We don't load them again in HomeScreen.
       fetchAllData();
     } else if (!isLoadingAuth && !currentUser) {
        // If no user and auth is loaded, clear data and loading state
@@ -827,40 +829,13 @@ function HomeScreen() {
       setIsLoading(false);
     }
      // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoadingAuth, currentUser]); // Depend on auth state
+  }, [isLoadingAuth, currentUser]); // Depend on auth state and fetchAllData
 
-  useEffect(() => {
-    const loadSavedItems = async () => {
-        try {
-            const savedKeys = await AsyncStorage.getItem('savedTripItems');
-            if (savedKeys) {
-                setSavedItems(new Set(JSON.parse(savedKeys)));
-            }
-        } catch (e) {
-            console.error("Failed to load saved items:", e);
-        }
-    };
-    loadSavedItems();
-  }, []);
+  // REMOVE: useEffect for loading saved items - Context handles this
+  // useEffect(() => { /* ... */ }, []);
 
-  useEffect(() => {
-    // Persist saved items whenever the savedItems state changes
-    const persistSavedItems = async () => {
-        try {
-            // Use the state directly, no need to read from storage first to compare
-            const newSavedString = JSON.stringify([...savedItems]);
-             await AsyncStorage.setItem('savedTripItems', newSavedString);
-             console.log("Saved items persisted.");
-        } catch (e) {
-            console.error("Failed to save trip items:", e);
-        }
-    };
-    // Only persist if savedItems is non-empty OR if we just cleared it (size is 0)
-    // This ensures clearing items also persists.
-    if (savedItems) {
-        persistSavedItems();
-    }
-  }, [savedItems]);
+  // REMOVE: useEffect for persisting saved items - Context handles this
+  // useEffect(() => { /* ... */ }, [savedItems]);
 
 
   const onRefresh = useCallback(() => {
@@ -868,65 +843,48 @@ function HomeScreen() {
     fetchAllData(false); // Force fetch, ignore cache
   }, [fetchAllData]);
 
-  const toggleSaveItem = useCallback((item, type) => {
-    // Use a combination of type and a unique ID from the item
-    const itemId = item.id || item.name; // Use id if available, fallback to name
-    if (!itemId) {
-        console.error("Cannot save item without a unique ID or name:", item);
-        Alert.alert("Error", "Could not save this item.");
-        return;
-    }
-    const key = `${type}_${itemId}`;
+  // REMOVE: Local toggleSaveItem function - Use the one from context
+  // const toggleSaveItem = useCallback((item, type) => { /* ... */ }, []);
 
-    setSavedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(key)) {
-        newSet.delete(key);
-        // Optional: show confirmation
-        // Alert.alert('Removed', `${item.name || item.title || 'Item'} removed from your trip plan.`);
-        console.log(`${item.name || item.title || 'Item'} removed from saved items.`);
-      } else {
-        newSet.add(key);
-         // Optional: show confirmation
-        // Alert.alert('Saved', `${item.name || item.title || 'Item'} added to your trip plan!`);
-        console.log(`${item.name || item.title || 'Item'} added to saved items.`);
-      }
-      return newSet;
-    });
-  }, []); // No need to depend on styles or isDarkMode
 
   // --- Render Helpers ---
 
+  // This function now uses the isItemSaved and toggleSaveItem from the context hook
   const renderSaveButton = useCallback((item, type, iconColor = Colors.white) => {
      const itemId = item.id || item.name;
-      if (!itemId) return null; // Don't render button if item lacks ID
-    const key = `${type}_${itemId}`;
-    const isSaved = savedItems.has(key);
+      if (!itemId) return null; // Don't render button if item lacks ID/name
+    // Use the context's helper function to check if saved
+    const isSaved = isItemSaved(item, type); // <-- USE CONTEXT HELPER
+
     return (
       <TouchableOpacity
         style={styles.saveButton}
-        onPress={() => toggleSaveItem(item, type)}
+        // Use the context's toggle function
+        onPress={() => toggleSaveItem(item, type)} // <-- USE CONTEXT TOGGLE
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        accessibilityLabel={isSaved ? `Remove ${item.name || item.title || 'item'} from saved items` : `Save ${item.name || item.title || 'item'}`}
+        accessibilityLabel={isSaved ? `Remove ${item.name || item.title || 'item'}` : `Save ${item.name || item.title || 'item'}`}
       >
         <Ionicons
-          name={isSaved ? 'bookmark' : 'bookmark-outline'}
+          name={isSaved ? 'bookmark' : 'bookmark-outline'} // bookmark-outline for unsaved
           size={22}
-          color={isSaved ? Colors.light.tint : iconColor} // Use default tint for saved state
+          color={isSaved ? Colors.light.tint : iconColor} // Use default tint for saved state, iconColor for unsaved
           style={styles.saveIcon}
         />
       </TouchableOpacity>
     );
-  }, [savedItems, toggleSaveItem, styles.saveButton, styles.saveIcon]); // Added styles to dependencies
+    // Dependencies now include the context functions/state check
+  }, [isItemSaved, toggleSaveItem, styles.saveButton, styles.saveIcon, isDarkMode]); // Added dependencies
+
 
   // --- RENDER FUNCTIONS with ENHANCED ANIMATIONS ---
 
   const renderDestinationCard = useCallback(
     ({ item, index }) => (
-      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)}>
+      <Animated.View entering={SlideInLeft.delay(index * 100).duration(400)} style={styles.horizontalListItem}> {/* Added margin style */}
         <AnimatedCard
           style={styles.destinationCard}
-          onPress={() => navigation.navigate('DestinationDetail', { destinationId: item.id })}
+          // Pass the full item object to the detail screen so it can be saved/unsaved from there too
+          onPress={() => navigation.navigate('DestinationDetail', { destinationId: item.id, item: item, type: 'destination' })} // Pass item and type
           accessibilityLabel={`View details for ${item.name}`}
           isDarkMode={isDarkMode}
         >
@@ -936,6 +894,7 @@ function HomeScreen() {
             resizeMode="cover"
             onError={() => handleImageError(item.id)}
           >
+            {/* Gradient Overlay */}
             <LinearGradient
                 colors={['transparent', 'rgba(0,0,0,0.8)']}
                 style={StyleSheet.absoluteFill}
@@ -945,6 +904,7 @@ function HomeScreen() {
               <Text style={styles.destinationDescription} numberOfLines={2}>{item.description}</Text>
             </View>
           </ImageBackground>
+          {/* Use the shared renderSaveButton */}
           {renderSaveButton(item, 'destination')}
         </AnimatedCard>
       </Animated.View>
@@ -954,10 +914,11 @@ function HomeScreen() {
 
   const renderHotelCard = useCallback(
     ({ item, index }) => (
-      <Animated.View entering={SlideInLeft.delay(index * 120).duration(450)}>
+      <Animated.View entering={SlideInLeft.delay(index * 120).duration(450)} style={styles.horizontalListItem}> {/* Added margin style */}
         <AnimatedCard
           style={styles.hotelCard}
-          onPress={() => navigation.navigate('HotelDetail', { hotelId: item.id })}
+          // Pass the full item object to the detail screen
+          onPress={() => navigation.navigate('HotelDetail', { hotelId: item.id, item: item, type: 'hotel' })} // Pass item and type
           accessibilityLabel={`View details for ${item.name}, Rating ${item.rating}, Price ${item.price}`}
           isDarkMode={isDarkMode}
         >
@@ -970,27 +931,27 @@ function HomeScreen() {
           <View style={styles.hotelInfo}>
             <Text style={styles.hotelName} numberOfLines={1}>{item.name}</Text>
             <View style={styles.ratingContainer}>
-              <Ionicons name="star" size={16} color={Colors.light.success} />
+              <Ionicons name="star" size={16} color={Colors.light.success} /> {/* Use success color for stars */}
               <Text style={styles.hotelRating}>{item.rating} Stars</Text>
             </View>
             <Text style={styles.hotelPrice}>{item.price}/night</Text>
           </View>
-          {/* Save button with themed tint color for dark mode */}
-          {renderSaveButton(item, 'hotel', isDarkMode ? Colors.dark.tint : Colors.light.tint)}
+           {/* Use the shared renderSaveButton */}
+          {renderSaveButton(item, 'hotel', isDarkMode ? Colors.dark.tint : Colors.light.tint)} {/* Pass theme color for outline */}
         </AnimatedCard>
       </Animated.View>
     ),
     [navigation, styles, isDarkMode, renderSaveButton, handleImageError, imageErrors]
   );
 
-   // renderEventCard function is removed as the section is removed
 
   const renderRestaurantCard = useCallback(
     ({ item, index }) => (
-      <Animated.View entering={SlideInLeft.delay(index * 120).duration(450)}>
+      <Animated.View entering={SlideInLeft.delay(index * 120).duration(450)} style={styles.horizontalListItem}> {/* Added margin style */}
         <AnimatedCard
           style={styles.restaurantCard}
-          onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id })}
+          // Pass the full item object to the detail screen
+          onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id, item: item, type: 'restaurant' })} // Pass item and type
           accessibilityLabel={`View details for ${item.name}, Cuisine: ${item.cuisine}, Price Range: ${item.priceRange}`}
           isDarkMode={isDarkMode}
         >
@@ -1004,21 +965,25 @@ function HomeScreen() {
             <Text style={styles.restaurantName} numberOfLines={1}>{item.name}</Text>
             <Text style={styles.restaurantDetails}>{item.cuisine} • {item.priceRange}</Text>
           </View>
+           {/* Use the shared renderSaveButton */}
+           {renderSaveButton(item, 'restaurant', isDarkMode ? Colors.dark.tint : Colors.light.tint)} {/* Pass theme color for outline */}
         </AnimatedCard>
       </Animated.View>
     ),
-    [navigation, styles, isDarkMode, handleImageError, imageErrors]
+    [navigation, styles, isDarkMode, renderSaveButton, handleImageError, imageErrors]
   );
 
   const renderAttractionCard = useCallback(
     ({ item, index }) => (
+      // Note: FlatList numColumns adds wrap behavior, manage spacing with columnWrapperStyle and itemContainer padding
       <Animated.View
           style={styles.attractionCardContainer}
           entering={FadeIn.delay(index * 75).duration(500)}
       >
           <AnimatedCard
               style={styles.attractionCard}
-              onPress={() => navigation.navigate('AttractionDetail', { attractionId: item.id })}
+              // Pass the full item object to the detail screen
+              onPress={() => navigation.navigate('AttractionDetail', { attractionId: item.id, item: item, type: 'attraction' })} // Pass item and type
               accessibilityLabel={`View details for ${item.name}`}
               isDarkMode={isDarkMode}
           >
@@ -1029,7 +994,8 @@ function HomeScreen() {
                  onError={() => handleImageError(item.id)}
                />
               <Text style={styles.attractionName} numberOfLines={1}>{item.name}</Text>
-              {renderSaveButton(item, 'attraction', isDarkMode ? Colors.dark.tint : Colors.light.tint)}
+               {/* Use the shared renderSaveButton */}
+              {renderSaveButton(item, 'attraction', isDarkMode ? Colors.dark.tint : Colors.light.tint)} {/* Pass theme color for outline */}
           </AnimatedCard>
       </Animated.View>
     ),
@@ -1054,10 +1020,11 @@ function HomeScreen() {
       >
         <AnimatedCard
           style={styles.outdoorActivityCard}
-          onPress={() => Alert.alert('Explore', `Find ${item.name} activities near you!`)}
+          onPress={() => Alert.alert('Explore', `Find ${item.name} activities near you!`)} // Placeholder action
           accessibilityLabel={`Explore ${item.name} activities`}
           isDarkMode={isDarkMode}
         >
+          {/* FIX: Use valid ionicon names - check initialMockData */}
           <Ionicons name={item.icon || 'help-circle-outline'} size={30} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
           <Text style={styles.outdoorActivityText}>{item.name}</Text>
         </AnimatedCard>
@@ -1092,12 +1059,13 @@ function HomeScreen() {
           accessibilityLabel={`Call ${item.name} at ${item.number}`}
           accessibilityRole="button"
         >
-          <Ionicons name={item.icon || 'call-outline'} size={24} color={Colors.light.danger} />
+          <Ionicons name={item.icon || 'call-outline'} size={24} color={Colors.light.danger} /> {/* Use danger color */}
           <View style={styles.emergencyContactInfo}>
             <Text style={styles.emergencyContactName}>{item.name}</Text>
             <Text style={styles.emergencyContactNumber}>{item.number}</Text>
           </View>
-          <Ionicons name="call-outline" size={24} color={Colors.light.danger} />
+          {/* Redundant icon here? Maybe remove or make it a call button? */}
+          {/* <Ionicons name="call-outline" size={24} color={Colors.light.danger} /> */}
         </TouchableOpacity>
       </Animated.View>
     ),
@@ -1106,10 +1074,12 @@ function HomeScreen() {
 
   // --- Render Logic ---
   if (isLoadingAuth) {
+    // Show loading while authenticating
     return <LoadingAnimation isDarkMode={isDarkMode} />;
   }
 
   if (!currentUser) {
+    // Show login prompt if not authenticated
     return (
       <View style={styles.loadingContainer}>
         <Ionicons name="log-in-outline" size={60} color={styles.loadingText.color} />
@@ -1124,12 +1094,14 @@ function HomeScreen() {
     );
   }
 
+  // Show initial loading screen if data is not yet loaded and not refreshing
   if (isLoading && !appData && !refreshing) {
     return (
         <LoadingAnimation isDarkMode={isDarkMode} />
     );
   }
 
+   // Show error screen if data failed to load and no cached data exists
   if (!isLoading && !appData && !refreshing) {
     return (
       <View style={styles.loadingContainer}>
@@ -1152,7 +1124,6 @@ function HomeScreen() {
   // Safely access data, defaulting to empty arrays if null/undefined
   const destinationsData = appData?.featuredDestinations ?? [];
   const hotelsData = appData?.recommendedHotels ?? [];
-  // const eventsData = appData?.upcomingEvents ?? []; // Not needed for rendering
   const restaurantsData = appData?.topRatedRestaurants ?? [];
   const attractionsData = appData?.popularAttractions ?? [];
 
@@ -1167,10 +1138,9 @@ function HomeScreen() {
   // Check if sections have data to render
   const hasDestinations = destinationsData.length > 0;
   const hasHotels = hotelsData.length > 0;
-  // const hasEvents = eventsData.length > 0; // Not needed for rendering check
   const hasRestaurants = restaurantsData.length > 0;
   const hasAttractions = attractionsData.length > 0;
-  const hasOutdoor = outdoorData.length > 0; // Check updated outdoor data length
+  const hasOutdoor = outdoorData.length > 0;
   const hasInfo = cultureData.length > 0 || historyData.length > 0 || beachesData.length > 0;
   const hasTransport = transportData.length > 0;
   const hasEmergency = emergencyData.length > 0;
@@ -1198,6 +1168,7 @@ function HomeScreen() {
              <Text style={styles.locationText}>{userLocation}</Text>
              {weather && (
                <View style={styles.weatherContainer}>
+                 {/* Use valid ionicon name */}
                  <Ionicons name={weather.icon || 'thermometer-outline'} size={20} color={Colors.white} />
                  <Text style={styles.weatherText}>{weather.temp}, {weather.condition}</Text>
                </View>
@@ -1231,7 +1202,7 @@ function HomeScreen() {
         style={styles.scrollView}
         contentContainerStyle={styles.scrollViewContent}
         onScroll={scrollHandler}
-        scrollEventThrottle={16}
+        scrollEventThrottle={16} // Adjust throttle for performance if needed (16ms is ~60fps)
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -1245,16 +1216,17 @@ function HomeScreen() {
           />
         }
       >
-        {/* Spacer View */}
+        {/* Spacer View to push content below header */}
         <View style={{ height: HEADER_MAX_HEIGHT }} />
-        <View style={{ height: SPACING }} />
+        {/* Spacer for search bar */}
+        <View style={{ height: SPACING * 3 }} />
 
-        {/* Render sections conditionally */}
+
         {hasDestinations && (
             <>
                 <SectionHeader
                     title="Explore Bejaia"
-                    onSeeAll={() => navigation.navigate('Destinations')} // <-- Modified
+                    onSeeAll={() => navigation.navigate('Destinations')}
                     isDarkMode={isDarkMode}
                 />
                 <FlatList
@@ -1272,7 +1244,7 @@ function HomeScreen() {
             <>
                 <SectionHeader
                     title="Stay in Comfort"
-                    onSeeAll={() => navigation.navigate('Hotels')} // This one already worked
+                    onSeeAll={() => navigation.navigate('Hotels')}
                     isDarkMode={isDarkMode}
                 />
                 <FlatList
@@ -1286,13 +1258,11 @@ function HomeScreen() {
             </>
         )}
 
-        {/* Upcoming Events section was removed */}
-
         {hasRestaurants && (
             <>
                 <SectionHeader
                     title="Dine in Style"
-                    onSeeAll={() => navigation.navigate('Restaurants')} // <-- Modified
+                    onSeeAll={() => navigation.navigate('Restaurants')}
                     isDarkMode={isDarkMode}
                 />
                 <FlatList
@@ -1310,14 +1280,16 @@ function HomeScreen() {
              <>
                 <SectionHeader
                     title="Must-Visit Spots"
-                    onSeeAll={() => navigation.navigate('Attractions')} // <-- Modified
+                    onSeeAll={() => navigation.navigate('Attractions')}
                     isDarkMode={isDarkMode}
                 />
+                {/* Using FlatList for grid layout */}
                 <FlatList
                     data={attractionsData}
                     keyExtractor={(item) => `attr-${item.id}`}
                     renderItem={renderAttractionCard}
                     numColumns={2}
+                    // columnWrapperStyle handles horizontal spacing between columns/items
                     columnWrapperStyle={styles.attractionsColumnWrapper}
                     contentContainerStyle={styles.attractionsContentContainer}
                     showsVerticalScrollIndicator={false}
@@ -1330,8 +1302,7 @@ function HomeScreen() {
         {hasOutdoor && (
             <>
                 <SectionHeader
-                     title="Activiter"
-                     // onSeeAll prop removed as requested earlier
+                     title="Activities" // Corrected title
                      isDarkMode={isDarkMode}
                 />
                  <View style={styles.outdoorGridContainer}>
@@ -1343,6 +1314,7 @@ function HomeScreen() {
 
         {hasInfo && (
             <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+              {/* Combined Info Card for Culture, History, Beaches */}
               <View style={styles.infoCard}>
                 {cultureData.length > 0 && (
                     <>
@@ -1369,6 +1341,7 @@ function HomeScreen() {
         {hasTransport && (
              <Animated.View entering={FadeInUp.duration(500).delay(300)}>
                 <SectionHeader title="Getting Around Bejaia" isDarkMode={isDarkMode} />
+                {/* Combined Transport Info Card */}
                 <View style={[styles.infoCard, { paddingVertical: SPACING * 0.5 }]}>
                     {transportData.map((item, index) =>
                         renderTransportInfo(item, index, index === transportData.length - 1)
