@@ -34,6 +34,9 @@ import { useAuth } from '../contexts/AuthContext';
 import EditProfileModal from '../components/EditProfileModal';
 import LanguageModal from '../components/LanguageModal'; // Assuming you have this modal
 
+// Import LanguageContext
+import { useLanguage } from '../contexts/LanguageContext';
+
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
@@ -290,6 +293,7 @@ function ProfileScreen() {
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const { currentUser, isLoadingAuth } = useAuth();
+  const { currentLanguage, changeLanguage, t } = useLanguage();
 
   const colors = useMemo(() => (isDarkMode ? Colors.dark : Colors.light), [isDarkMode]);
   const styles = useMemo(() => getThemedStyles(isDarkMode), [isDarkMode]);
@@ -539,6 +543,26 @@ function ProfileScreen() {
       },
     ]);
   }, [currentUser, fetchUserProfileData]); // Added fetchUserProfileData just in case of error recovery attempt
+
+  const handleLanguageChange = useCallback(async (newLanguage) => {
+    try {
+      await changeLanguage(newLanguage);
+      setIsLanguageModalVisible(false);
+      // Show success message
+      Alert.alert(
+        t('success'),
+        t('languageChanged'),
+        [{ text: t('ok') }]
+      );
+    } catch (error) {
+      console.error('Error changing language:', error);
+      Alert.alert(
+        t('error'),
+        t('languageChangeError'),
+        [{ text: t('ok') }]
+      );
+    }
+  }, [changeLanguage, t]);
 
   // --- Render Helpers ---
   const renderProfileItem = (item, isLastInSection) => {
@@ -797,14 +821,8 @@ function ProfileScreen() {
           <LanguageModal
             isVisible={isLanguageModalVisible}
             onClose={() => setIsLanguageModalVisible(false)}
-            currentLanguage={profileData?.preferences?.language || 'en'} // Example prop
-            onLanguageChanged={(newLang) => {
-                setIsLanguageModalVisible(false);
-                 // Assume language change might require profile refetch or specific update logic
-                 console.log('Language changed to:', newLang);
-                 // Optionally refetch profile if language affects displayed data
-                 // setTimeout(() => fetchUserProfileData(currentUser.uid), 50); // Might need to pass preferences update specifically
-            }}
+            currentLanguage={currentLanguage.code}
+            onLanguageChanged={handleLanguageChange}
           />
         </>
       )}

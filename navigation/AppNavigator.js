@@ -38,6 +38,10 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen'; // Assuming 
 // REMOVED: import AppearanceSettingsScreen from '../screens/AppearanceSettingsScreen';
 import AboutUsScreen from '../screens/AboutUsScreen'; // Added explicitly
 
+// NEW: Import Activity Screens
+import HikingScreen from '../screens/HikingScreen';
+import SwimmingScreen from '../screens/SwimmingScreen';
+import ParaglidingScreen from '../screens/ParaglidingScreen';
 
 // NEW: List Screens (Ensure these imports are correct)
 import DestinationsScreen from '../screens/DestinationsScreen';
@@ -103,6 +107,23 @@ function MainStack() {
         {/* Main tab navigator is the entry point after auth */}
         <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
 
+        {/* Activity Screens */}
+        <Stack.Screen
+          name="Hiking"
+          component={HikingScreen}
+          options={{ headerShown: true, title: 'Hiking' }}
+        />
+        <Stack.Screen
+          name="Swimming"
+          component={SwimmingScreen}
+          options={{ headerShown: true, title: 'Swimming' }}
+        />
+        <Stack.Screen
+          name="Parapente"
+          component={ParaglidingScreen}
+          options={{ headerShown: true, title: 'Parapente' }}
+        />
+
         {/* Individual screens accessible from tabs or other parts of the app */}
         {/* NEW: Add the list screens */}
         <Stack.Screen
@@ -121,15 +142,24 @@ function MainStack() {
             options={{ headerShown: true, title: 'Attractions' }} // Show header
         />
          <Stack.Screen
-            name="Hotels" // Assuming HotelReservationScreen is your Hotels list screen
+            name="Hotels" // List of hotels
             component={HotelReservationScreen}
-            options={{ headerShown: true, title: 'Hotels' }} // Show header
+            options={{ headerShown: true, title: 'Hotels' }}
+        />
+        <Stack.Screen
+            name="HotelDetail" // View hotel details
+            component={HotelDetailScreen}
+            options={{ headerShown: true, title: 'Hotel Details' }}
+        />
+        <Stack.Screen
+            name="BookHotel" // Booking/reservation screen
+            component={HotelReservationScreen}
+            options={{ headerShown: true, title: 'Book Hotel' }}
         />
 
         {/* Detail screens (Ensure these component names and imports are correct) */}
         {/* Use your specific detail screens if you have them, or the generic one */}
         <Stack.Screen name="DestinationDetail" component={DetailScreen} options={{ headerShown: true, title: 'Destination Details' }} />
-        <Stack.Screen name="HotelDetail" component={HotelDetailScreen} options={{ headerShown: true, title: 'Hotel Details' }} />
         <Stack.Screen name="RestaurantDetail" component={DetailScreen} options={{ headerShown: true, title: 'Restaurant Details' }} />
         <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
 

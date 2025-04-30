@@ -1,7 +1,7 @@
 // firebase.js // <-- Assuming this is the actual name of your file
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+const { initializeApp } = require('firebase/app');
+const { getAuth } = require('firebase/auth');
+const { getFirestore } = require('firebase/firestore');
 
 // Initialize Firebase
 const firebaseConfig = {
@@ -32,4 +32,9 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // MODIFIED: Export app along with auth and db
-export { app, auth, db }; // <--- Make sure app is listed here
+module.exports = {
+  app,
+  auth,
+  db,
+  firebaseConfig
+};

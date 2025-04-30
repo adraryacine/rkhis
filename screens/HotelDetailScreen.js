@@ -1,18 +1,42 @@
 // screens/HotelDetailScreen.js
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  View, Text, StyleSheet, ScrollView, Image, ActivityIndicator,
-  Alert, Linking, Platform, TouchableOpacity, useColorScheme, SafeAreaView
-} from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
-import { Ionicons } from '@expo/vector-icons';
-// Import the data service function to fetch hotel details
-import { getHotelDetails } from '../services/dataService'; // <-- IMPORT THIS
-// Import the Saved Items Context hook
-import { useSavedItems } from '../contexts/SavedItemsContext'; // <-- IMPORT THIS
+const React = require('react');
+const {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Alert,
+  ActivityIndicator,
+  Platform,
+  Linking,
+  Share,
+  StatusBar,
+  RefreshControl,
+  SafeAreaView,
+  Dimensions,
+  TouchableOpacity,
+  useColorScheme,
+  FlatList,
+  Modal,
+  TextInput,
+  Animated,
+  PanResponder,
+} = require('react-native');
+const { Ionicons } = require('@expo/vector-icons');
+const { useNavigation, useRoute } = require('@react-navigation/native');
+const { LinearGradient } = require('expo-linear-gradient');
+const { useSavedItems } = require('../contexts/SavedItemsContext');
+const { getHotelById } = require('../services/dataService');
+const { addDoc, collection, serverTimestamp } = require('firebase/firestore');
+const { db } = require('../firebase');
+const { useLanguage } = require('../contexts/LanguageContext');
 
-
-const SPACING = 15; // Base spacing unit
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const HEADER_HEIGHT = Platform.OS === 'ios' ? 90 : 70;
+const SPACING = 16;
+const CARD_MARGIN_HORIZONTAL = SPACING;
+const CARD_MARGIN_VERTICAL = SPACING * 0.6;
 
 // --- getThemedColors (SYNTAX FIXED) ---
 // Ensure this color palette matches your application's theme consistently
@@ -27,110 +51,227 @@ const getThemedColors = (isDarkMode) => ({
     primaryOrange: isDarkMode ? '#FF9800' : '#BF360C', // Price color (maybe?) - Using secondaryText for N/A
     primaryRed: isDarkMode ? '#FF453A' : '#C62828', // Danger (Error text)
     border: isDarkMode ? '#333333' : '#E0E0E0', // Borders, separators, image placeholders
+    searchBackground: isDarkMode ? '#2A2A2A' : '#F0F0F0',
+    modalBackground: isDarkMode ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.5)',
     // Specific colors for elements
     starColor: isDarkMode ? '#FFD700' : '#FFC107', // Gold/Yellow for stars
+    gradientStart: isDarkMode ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.5)',
+    gradientEnd: isDarkMode ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.2)',
 });
 
 // --- getThemedHotelDetailStyles (Improved Styling) ---
 const getThemedHotelDetailStyles = (colors) => StyleSheet.create({
-    container: { flex: 1, backgroundColor: colors.background },
-    centered: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
-    scrollContent: { paddingBottom: SPACING * 4 }, // Add bottom padding to the scrollable content
-    loadingText: { marginTop: SPACING, fontSize: 16, color: colors.secondaryText },
-    errorText: { fontSize: 18, color: colors.danger, textAlign: 'center' },
-    hotelImageContainer: { // Container for the image/fallback
-        width: '100%',
-        height: 250, // Fixed height for the image area
-        backgroundColor: colors.border, // Background for fallback/loading
+    container: {
+        flex: 1,
+        backgroundColor: colors.background,
+    },
+    header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: HEADER_HEIGHT,
+        zIndex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: SPACING,
+        paddingTop: Platform.OS === 'ios' ? 40 : StatusBar.currentHeight,
+    },
+    headerButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.5)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    fallbackIcon: { // Style for fallback icon
-         marginBottom: SPACING * 0.5,
-         color: colors.secondaryText, // Icon color when image is not available
-    },
-    fallbackText: { // Style for fallback text
-        fontSize: 14,
-        color: colors.secondaryText, // Text color when image is not available
-    },
-     // NEW style for the main content wrapper below the image
-     mainContentWrapper: {
-        paddingHorizontal: SPACING, // Apply consistent horizontal padding to everything below the image
-        paddingTop: SPACING, // Add some space between the image and the first content block
-     },
-    // Styles for the card-like containers for different sections
-    sectionCard: {
-        backgroundColor: colors.card, // Use card background
-        borderRadius: SPACING,
-        padding: SPACING, // Internal padding for card content
-        marginBottom: SPACING, // Space between sections
-        shadowColor: '#000', // Basic shadow
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    hotelName: { fontSize: 24, fontWeight: 'bold', marginBottom: SPACING, color: colors.text }, // Adjust margin bottom
-    detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: SPACING * 1.5 }, // Adjust margin bottom
-    ratingContainer: { flexDirection: 'row', alignItems: 'center' },
-    hotelRating: { fontSize: 18, fontWeight: '600', marginLeft: SPACING * 0.5, color: colors.secondaryText }, // Use secondary color for rating/N/A
-    hotelPrice: { fontSize: 18, fontWeight: 'bold', color: colors.secondaryText }, // Use secondary color for price/N/A
-    sectionTitle: {
+    headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: colors.text,
-        marginBottom: SPACING * 0.8, // Space below title
-        // Removed border/padding bottom here, let sections define their own internal layout if needed
+        color: '#FFFFFF',
+        textShadowColor: 'rgba(0,0,0,0.75)',
+        textShadowOffset: { width: 0, height: 1 },
+        textShadowRadius: 2,
     },
-    secondaryText: { fontSize: 15, lineHeight: 22, color: colors.secondaryText }, // Used for description text
-    amenitiesList: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING * 0.8, marginTop: SPACING*0.5 }, // Space between amenity tags
-    amenityItem: {
-        paddingVertical: SPACING * 0.5,
-        paddingHorizontal: SPACING,
-        borderRadius: SPACING * 1.5, // Pill shape
-        borderWidth: 1,
-        borderColor: colors.border, // Border color
-        backgroundColor: colors.background, // Use background color within the card
+    imageContainer: {
+        width: SCREEN_WIDTH,
+        height: SCREEN_WIDTH * 0.75,
     },
-    amenityText: { fontSize: 14, color: colors.text }, // Text color for amenity tags
-    infoRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: SPACING * 0.8, paddingVertical: SPACING * 0.5 }, // Space between info rows
-    infoIcon: { marginRight: SPACING, color: colors.secondaryText, marginTop: 3 }, // Icon styling
-    infoText: { fontSize: 16, color: colors.secondaryText, flex: 1 }, // Info text style, wraps
-    linkText: { fontSize: 16, fontWeight: '600', color: colors.accent, textDecorationLine: 'underline' }, // Styled link text for phone/website
-    button: {
-        paddingVertical: SPACING * 1.2,
-        borderRadius: SPACING, // Rounded corners for button
-        alignItems: 'center',
-        marginTop: SPACING * 2, // Space above button
-        marginBottom: SPACING * 2, // Space below button
-        // marginHorizontal is handled by mainContentWrapper padding
+    image: {
+        width: '100%',
+        height: '100%',
     },
-    buttonText: { fontSize: 18, fontWeight: 'bold', color: '#FFFFFF' }, // Button text color
-     saveButtonContainer: {
+    gradient: {
         position: 'absolute',
-        top: Platform.OS === 'ios' ? 50 : 20, // Adjust based on status bar/notch for header area
-        right: SPACING, // Aligned with main content padding
-        zIndex: 10, // High zIndex to ensure it's tappable over the image
-        backgroundColor: 'rgba(0,0,0,0.4)', // Semi-transparent dark background
-        borderRadius: 20, // Make it round
-        padding: 5, // Padding inside the circle
-        justifyContent: 'center', // Center icon
-        alignItems: 'center', // Center icon
+        left: 0,
+        right: 0,
+        bottom: 0,
+        height: 150,
     },
-    saveIcon: {
-        // Color set dynamically in JSX
+    content: {
+        flex: 1,
+        backgroundColor: colors.background,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
+        marginTop: -20,
+        paddingTop: 20,
     },
-    footerSpacer: { height: SPACING * 4 } // Space at the bottom
+    sectionCard: {
+        backgroundColor: colors.card,
+        borderRadius: 12,
+        marginHorizontal: SPACING,
+        marginBottom: SPACING,
+        padding: SPACING,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
+    },
+    sectionTitle: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: colors.text,
+        marginBottom: SPACING,
+    },
+    sectionSubtitle: {
+        fontSize: 16,
+        color: colors.secondaryText,
+        marginBottom: SPACING,
+    },
+    priceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING,
+    },
+    price: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: colors.primaryGreen,
+    },
+    pricePerNight: {
+        fontSize: 14,
+        color: colors.secondaryText,
+        marginLeft: 4,
+    },
+    ratingContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING,
+    },
+    rating: {
+        fontSize: 16,
+        color: colors.primaryOrange,
+        marginLeft: 4,
+    },
+    reviewCount: {
+        fontSize: 14,
+        color: colors.secondaryText,
+        marginLeft: 8,
+    },
+    locationContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING,
+    },
+    locationText: {
+        fontSize: 14,
+        color: colors.secondaryText,
+        marginLeft: 4,
+        flex: 1,
+    },
+    amenitiesContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: SPACING,
+    },
+    amenityItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 20,
+        marginRight: 8,
+        marginBottom: 8,
+    },
+    amenityText: {
+        fontSize: 14,
+        color: colors.text,
+        marginLeft: 4,
+    },
+    description: {
+        fontSize: 16,
+        color: colors.text,
+        lineHeight: 24,
+        marginBottom: SPACING,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        marginHorizontal: SPACING,
+        marginBottom: SPACING,
+    },
+    actionButton: {
+        flex: 1,
+        height: 50,
+        borderRadius: 25,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginHorizontal: 4,
+    },
+    primaryButton: {
+        backgroundColor: colors.primaryGreen,
+    },
+    secondaryButton: {
+        backgroundColor: colors.primaryBlue,
+    },
+    buttonText: {
+        color: '#FFFFFF',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: colors.background,
+    },
+    loadingText: {
+        marginTop: SPACING,
+        fontSize: 16,
+        color: colors.secondaryText,
+    },
 });
-
 
 function HotelDetailScreen() {
   const route = useRoute();
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { t } = useLanguage();
   const colors = getThemedColors(isDarkMode);
   const styles = getThemedHotelDetailStyles(colors);
+
+  // Add scroll animation
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const headerHeight = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT],
+    outputRange: [HEADER_HEIGHT, 0],
+    extrapolate: 'clamp',
+  });
+
+  const headerOpacity = scrollY.interpolate({
+    inputRange: [0, HEADER_HEIGHT / 2],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
 
   // Get parameters from the route
   // Use a fallback object {} to prevent errors if params are null/undefined
@@ -149,25 +290,24 @@ function HotelDetailScreen() {
 
 
   // State to hold the fetched hotel details. Use passed data for initial state if available.
-  const [hotelDetails, setHotelDetails] = useState(initialItem || initialHotel || null);
+  const [hotelDetails, setHotelDetails] = React.useState(initialItem || initialHotel || null);
   // State for loading status. True if we have a valid ID but no initial data.
   // Check if currentHotelId is a non-empty string AND we don't have initial data.
-  const [isLoading, setIsLoading] = useState(!!currentHotelId && !hotelDetails);
+  const [isLoading, setIsLoading] = React.useState(!!currentHotelId && !hotelDetails);
   // State for error message
-  const [error, setError] = useState(null);
+  const [error, setError] = React.useState(null);
 
   // Use Saved Items Context for save status and toggling
   const { savedItems, toggleSaveItem, isItemSaved } = useSavedItems(); // <-- USE CONTEXT HOOK
 
   // State to track if the current hotel is saved (based on context)
   // Initialize based on the *initial* item data we might have
-  const [isSaved, setIsSaved] = useState(isItemSaved(initialItem || initialHotel, type));
-
+  const [isSaved, setIsSaved] = React.useState(isItemSaved(initialItem || initialHotel, type));
 
   // --- Effect to Load Full Hotel Details ---
   // This effect runs when the component mounts or when currentHotelId changes.
   // Added hotelDetails to dependencies to avoid stale data when checking shouldFetch
-  useEffect(() => {
+  React.useEffect(() => {
       const fetchDetails = async (id) => {
           // Also check if id is a non-empty string
           if (!id || typeof id !== 'string') {
@@ -184,14 +324,14 @@ function HotelDetailScreen() {
 
           try {
               // Fetch the full details from your data service using the ID
-              const data = await getHotelDetails(id); // <-- Call your data service function
+              const hotelData = await getHotelById(id); // Renamed from data to hotelData
 
-              if (data) {
+              if (hotelData) {
                   console.log(`Successfully fetched details for hotel ID: ${id}`);
-                  setHotelDetails(data); // Update state with the full fetched data
+                  setHotelDetails(hotelData); // Update state with the full fetched data
                   // Update the screen title once data is loaded
-                  navigation.setOptions({ title: data.name || 'Hotel Details' });
-
+                  navigation.setOptions({ title: hotelData.name || 'Hotel Details' });
+                  setError(null);
               } else {
                    // If dataService returns null (meaning not found even in mock/fallback)
                   console.warn(`Hotel with ID ${id} not found in data service.`);
@@ -251,12 +391,12 @@ function HotelDetailScreen() {
       // Added getHotelDetails to dependencies as it's called inside the effect
       // Added navigation because setOptions is called
       // Added item/hotel params and hotelDetails state as they influence fetch logic
-  }, [currentHotelId, initialItem, initialHotel, navigation, hotelDetails, getHotelDetails]);
+  }, [currentHotelId, initialItem, initialHotel, navigation, hotelDetails, getHotelById]);
 
 
   // --- Effect to Update Saved Status ---
   // This effect runs when the displayed item data changes OR when the context's saved items list changes.
-  useEffect(() => {
+  React.useEffect(() => {
       // Get the item we are currently displaying (either fetched or initial)
       const itemForSavedCheck = hotelDetails || initialItem || initialHotel;
       if (itemForSavedCheck) {
@@ -272,7 +412,7 @@ function HotelDetailScreen() {
 
   // --- Handle Save Button Press ---
   // This function uses the item data that is currently displayed (either fetched or initial).
-  const handleToggleSave = useCallback(() => {
+  const handleToggleSave = React.useCallback(() => {
       // Use the item data currently in the state (fetched data takes precedence)
       const itemToSave = hotelDetails || initialItem || initialHotel;
       // Ensure item has a valid identifier before trying to save/unsave
@@ -306,6 +446,17 @@ function HotelDetailScreen() {
    );
    // --- END Placeholder Functions ---
 
+  const handleBookNow = () => {
+    if (!hotelDetails) return;
+    
+    navigation.navigate('BookHotel', {
+        hotelId: hotelDetails.id,
+        hotelName: hotelDetails.name,
+        hotelImage: hotelDetails.images?.[0],
+        price: hotelDetails.price,
+        location: hotelDetails.location,
+    });
+  };
 
   // --- Render Logic ---
 
@@ -340,155 +491,283 @@ function HotelDetailScreen() {
   // If we reach here, isLoading is false and hotelDetails is a valid object.
   // Use hotelDetails for rendering.
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.scrollContent}>
-        {/* Save Button (Absolute positioned - sits over the scrollable content) */}
-         <TouchableOpacity
-           style={styles.saveButtonContainer}
-           onPress={handleToggleSave}
-           // Use name from hotelDetails for accessibility label
-           accessibilityLabel={isSaved ? `Remove ${hotelDetails.name || 'this item'} from saved` : `Save ${hotelDetails.name || 'this item'}`}
-         >
-           <Ionicons
-             name={isSaved ? 'bookmark' : 'bookmark-outline'} // Use bookmark icons
-             size={26}
-             color={isSaved ? colors.accent : 'white'} // Accent color when saved, white/iconColor when unsaved
-             style={styles.saveIcon}
-           />
-        </TouchableOpacity>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+      
+      <ScrollView style={styles.container}>
+        <View style={styles.imageContainer}>
+          <Image
+            source={{ uri: hotelDetails?.images?.[0] }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.7)']}
+            style={styles.gradient}
+          />
+        </View>
 
-        {/* Hotel Image or Fallback */}
-        {hotelDetails.image ? (
-            <Image source={{ uri: hotelDetails.image }} style={styles.hotelImageContainer} resizeMode="cover" />
-        ) : (
-             <View style={styles.hotelImageContainer}>
-                 <Ionicons name="business-outline" size={60} color={styles.fallbackIcon.color} style={styles.fallbackIcon}/>
-                 <Text style={styles.fallbackText}>Image Not Available</Text>
-             </View>
-        )}
-
-        {/* --- START Main Content Wrapper --- */}
-        {/* Wrap all content below the image in a single View */}
-        <View style={styles.mainContentWrapper}> {/* <-- OPENING TAG FOR MAIN CONTENT WRAPPER */}
-
-            {/* Content Block 1: Name, Rating, Price, Description */}
-            {/* Use sectionCard for background/shadow/border/internal padding */}
-            <View style={styles.sectionCard}>
-                <Text style={styles.hotelName}>{hotelDetails?.name || 'Hotel Details'}</Text>
-
-                {/* Show Actual Rating/Price if available, otherwise N/A */}
-                <View style={styles.detailRow}>
-                    <View style={styles.ratingContainer}>
-                         {/* Use star icon color based on whether rating is available */}
-                         <Ionicons name="star" size={20} color={hotelDetails?.rating ? colors.starColor : colors.secondaryText} style={{marginRight: SPACING * 0.5}} />
-                        <Text style={styles.hotelRating}>{hotelDetails?.rating ? `${hotelDetails.rating} Stars` : 'Rating N/A'}</Text>
-                    </View>
-                    <Text style={styles.hotelPrice}>{hotelDetails?.price ? `${hotelDetails.price}/night` : 'Price N/A'}</Text>
-                </View>
-
-                {/* Display Description if available */}
-                {hotelDetails?.description && (
-                    <>
-                        {/* Section title within the card */}
-                        <Text style={[styles.sectionTitle, {marginTop: SPACING}]}>Description</Text> {/* Added specific top margin */}
-                        <Text style={styles.secondaryText}>{hotelDetails.description}</Text>
-                    </>
-                )}
-            </View> {/* <-- CLOSING TAG for sectionCard */}
-
-
-            {/* Display Amenities if available */}
-            {hotelDetails?.amenities && Array.isArray(hotelDetails.amenities) && hotelDetails.amenities.length > 0 && (
-                 // Amenities View - Use sectionCard style
-                 <View style={styles.sectionCard}> {/* Use the new sectionCard style */}
-                    <Text style={styles.sectionTitle}>Amenities</Text>
-                    <View style={styles.amenitiesList}>
-                        {hotelDetails.amenities.map((amenity, index) => (
-                           <View key={index} style={styles.amenityItem}>
-                                <Text style={styles.amenityText}>{amenity}</Text>
-                           </View>
-                        ))}
-                    </View>
-                </View>
-            )}
-
-             {/* Location Section - Use coordinates or address */}
-             {(hotelDetails?.latitude || hotelDetails?.address) && (
-                  // Location View - Use sectionCard style
-                 <View style={styles.sectionCard}> {/* Use the new sectionCard style */}
-                     <Text style={styles.sectionTitle}>Location</Text>
-                     <TouchableOpacity style={styles.infoRow} onPress={() => {
-                         const lat = hotelDetails.latitude;
-                         const lng = hotelDetails.longitude;
-                         const label = hotelDetails.name || 'Hotel Location';
-                         // Prefer lat/lng for map link
-                         const url = (lat && lng)
-                             ? Platform.select({ ios: `maps:${lat},${lng}?q=${label}`, android: `geo:${lat},${lng}?q=${label}` })
-                             : `geo:0,0?q=${encodeURIComponent(hotelDetails.address || label)}`; // Fallback to address query
-                          Linking.openURL(url).catch(err => Alert.alert("Error", "Could not open map."));
-                     }}>
-                         <Ionicons name="location-outline" size={20} color={styles.infoIcon.color} style={styles.infoIcon} />
-                         {/* Display address if available, otherwise coordinates */}
-                         <Text style={styles.linkText}>{hotelDetails?.address || `${hotelDetails.latitude?.toFixed(5)}, ${hotelDetails.longitude?.toFixed(5)}`}</Text>
-                         <Ionicons name="navigate-outline" size={20} color={colors.accent} />
-                     </TouchableOpacity>
-                 </View>
-             )}
-
-             {/* Contact Section - Show if phone or website exists */}
-              {(hotelDetails?.phone || hotelDetails?.website) && (
-                  // Contact View - Use sectionCard style
-                 <View style={styles.sectionCard}> {/* Use the new sectionCard style */}
-                     <Text style={styles.sectionTitle}>Contact</Text>
-                     {hotelDetails?.phone && (
-                        <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(`tel:${hotelDetails.phone}`).catch(err => Alert.alert("Error", "Could not open dialer."))}>
-                            <Ionicons name="call-outline" size={20} color={styles.infoIcon.color} style={styles.infoIcon} />
-                            <Text style={styles.linkText}>{hotelDetails.phone}</Text>
-                        </TouchableOpacity>
-                     )}
-                     {hotelDetails?.website && (
-                          <TouchableOpacity style={styles.infoRow} onPress={() => Linking.openURL(hotelDetails.website.startsWith('http') ? hotelDetails.website : `https://${hotelDetails.website}`).catch(err => Alert.alert("Error", "Could not open website."))}>
-                              <Ionicons name="globe-outline" size={20} color={styles.infoIcon.color} style={styles.infoIcon} />
-                             <Text style={[styles.linkText, { flex: 1 }]} numberOfLines={1}>{hotelDetails.website}</Text>
-                             <Ionicons name="open-outline" size={20} color={colors.accent} />
-                         </TouchableOpacity>
-                     )}
-                 </View>
-             )}
-
-         {/* Keep placeholder sections if needed */}
-         {/* Use sectionCard style */}
-         {renderReviewsPlaceholder()}
-         {renderPriceComparisonPlaceholder()}
-
-
-          {/* Booking Button - Link to website if available */}
-          {/* Place it directly inside mainContentWrapper */}
+        <View style={styles.header}>
           <TouchableOpacity
-                style={[styles.button, { backgroundColor: hotelDetails?.website ? colors.primaryGreen : colors.secondaryText }]}
-                onPress={() => {
-                    if (hotelDetails?.website) {
-                        // Prepend https if needed and open link
-                        const url = hotelDetails.website.startsWith('http://') || hotelDetails.website.startsWith('https://') ? hotelDetails.website : `https://${hotelDetails.website}`;
-                        Linking.openURL(url).catch(err => Alert.alert("Error", "Could not open website.", [{ text: "OK" }]));
-                    } else {
-                        Alert.alert("Booking Info", "No website available for booking this hotel.", [{ text: "OK" }]);
-                    }
-                }}
-                disabled={!hotelDetails?.website} // Disable if no website
+            style={styles.headerButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {hotelDetails?.name}
+          </Text>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => {
+              // Implement share functionality
+            }}
+          >
+            <Ionicons name="share-outline" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.content}>
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>{hotelDetails?.name}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.price}>${hotelDetails?.price}</Text>
+              <Text style={styles.pricePerNight}>/ night</Text>
+            </View>
+            <View style={styles.ratingContainer}>
+              <Ionicons name="star" size={20} color={colors.primaryOrange} />
+              <Text style={styles.rating}>{hotelDetails?.rating ? `${hotelDetails?.rating} Stars` : 'Rating N/A'}</Text>
+              <Text style={styles.reviewCount}>({hotelDetails?.reviews} reviews)</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.locationContainer}
+              onPress={() => {
+                // Implement location press functionality
+              }}
             >
-                <Text style={[styles.buttonText]}>{hotelDetails?.website ? 'Visit Website to Book' : 'Booking Info N/A'}</Text>
+              <Ionicons name="location-outline" size={20} color={colors.accent} />
+              <Text style={styles.locationText}>{hotelDetails?.address || `${hotelDetails?.latitude?.toFixed(5)}, ${hotelDetails?.longitude?.toFixed(5)}`}</Text>
+              <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
             </TouchableOpacity>
+          </View>
 
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Amenities</Text>
+            <View style={styles.amenitiesContainer}>
+              {(hotelDetails?.amenities || []).map((amenity, index) => (
+                <View key={index} style={styles.amenityItem}>
+                  <Ionicons name="checkmark-circle-outline" size={16} color={colors.primaryGreen} />
+                  <Text style={styles.amenityText}>{amenity}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
 
-        {/* Footer Spacer */}
-        {/* Place it directly inside mainContentWrapper */}
-        <View style={styles.footerSpacer} />
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Description</Text>
+            <Text style={styles.description}>{hotelDetails?.description || 'No description available.'}</Text>
+          </View>
 
-        </View> {/* <-- CLOSING TAG FOR MAIN CONTENT WRAPPER */}
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Photos</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{ paddingRight: SPACING }}
+            >
+              {(hotelDetails?.images || []).map((image, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{ marginRight: SPACING }}
+                  onPress={() => {
+                    // Handle image preview
+                  }}
+                >
+                  <Image
+                    source={{ uri: image }}
+                    style={{
+                      width: 200,
+                      height: 150,
+                      borderRadius: 12,
+                    }}
+                    resizeMode="cover"
+                  />
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </ScrollView>
 
-
-    </ScrollView>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.secondaryButton]}
+          onPress={handleToggleSave}
+        >
+          <Ionicons
+            name={isSaved ? 'bookmark' : 'bookmark-outline'}
+            size={24}
+            color="#FFFFFF"
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.actionButton, styles.primaryButton]}
+          onPress={handleBookNow}
+        >
+          <Text style={styles.buttonText}>{t('bookNow')}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
-export default HotelDetailScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  image: {
+    width: '100%',
+    height: 300,
+  },
+  content: {
+    padding: 16,
+  },
+  name: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  rating: {
+    fontSize: 18,
+    marginLeft: 4,
+  },
+  reviews: {
+    fontSize: 14,
+    marginLeft: 8,
+  },
+  location: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 16,
+  },
+  price: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  perNight: {
+    fontSize: 16,
+    marginLeft: 4,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  description: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 16,
+  },
+  amenityItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    margin: 4,
+    flex: 1,
+  },
+  amenityText: {
+    marginLeft: 8,
+    fontSize: 14,
+  },
+  bookNowButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  bookNowButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  inputContainer: {
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+  },
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    marginBottom: 16,
+  },
+  totalLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  totalPrice: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  bookButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  bookButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+  },
+  cancelButtonText: {
+    fontSize: 16,
+  },
+});
+
+module.exports = HotelDetailScreen;

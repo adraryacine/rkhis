@@ -36,6 +36,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // Keep AsyncStorage for caching app data
+import { useSearch } from '../contexts/SearchContext';
+import { useTheme } from '../contexts/ThemeContext';
+import SearchBar from '../components/SearchBar';
 
 // IMPORT THE SAVED ITEMS CONTEXT HOOK
 import { useSavedItems } from '../contexts/SavedItemsContext'; // <-- USE THE CONTEXT HOOK (Adjust path)
@@ -132,8 +135,8 @@ const initialMockData = {
   // Updated Outdoor Activities - FIX IONICON NAMES
   outdoorActivities: [
     { id: 'out1', name: 'Hiking', icon: 'walk-outline' },
-    { id: 'out2', name: 'Paragliding', icon: 'airplane-outline' }, // Using airplane icon for paragliding
-    { id: 'out3', name: 'Swimming', icon: 'water-outline' }, // FIX: Use water-outline or similar valid icon
+    { id: 'out2', name: 'Parapente', icon: 'airplane-outline' },
+    { id: 'out3', name: 'Swimming', icon: 'water-outline' },
   ],
   transportationInfo: [
     { id: 'trans1', type: 'City Buses (ETUB)', details: 'Affordable network, check routes beforehand.', icon: 'bus-outline' },
@@ -568,7 +571,137 @@ const getThemedStyles = (isDarkMode = false) => {
     },
     saveIcon: {
         // Color set dynamically based on saved state below
-    }
+    },
+    searchBar: {
+      marginTop: Platform.OS === 'ios' ? 44 : 0,
+    },
+    searchResultsContainer: {
+      flex: 1,
+      padding: SPACING,
+    },
+    searchResultsList: {
+      paddingBottom: SPACING * 2,
+    },
+    searchResultItem: {
+      flexDirection: 'row',
+      marginBottom: SPACING,
+      borderRadius: 12,
+      overflow: 'hidden',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    searchResultImage: {
+      width: 100,
+      height: 100,
+      borderRadius: 8,
+    },
+    searchResultContent: {
+      flex: 1,
+      padding: SPACING,
+      justifyContent: 'space-between',
+    },
+    searchResultHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: SPACING / 2,
+    },
+    searchResultTitle: {
+      fontSize: 16,
+      fontWeight: '600',
+      flex: 1,
+      marginRight: SPACING,
+    },
+    searchResultType: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    searchResultTypeText: {
+      fontSize: 12,
+      fontWeight: '500',
+      marginLeft: 4,
+    },
+    searchResultDescription: {
+      fontSize: 14,
+      lineHeight: 20,
+    },
+    noResultsContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING * 2,
+    },
+    noResultsText: {
+      fontSize: 18,
+      fontWeight: '600',
+      marginTop: SPACING,
+    },
+    noResultsSubtext: {
+      fontSize: 14,
+      marginTop: SPACING / 2,
+      textAlign: 'center',
+    },
+    hotelsSection: {
+      marginBottom: SPACING * 2,
+    },
+    otherResultsSection: {
+      flex: 1,
+    },
+    hotelsList: {
+      paddingRight: SPACING,
+    },
+    hotelSearchCard: {
+      width: 200,
+      marginRight: SPACING,
+      borderRadius: 12,
+      overflow: 'hidden',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        android: {
+          elevation: 2,
+        },
+      }),
+    },
+    hotelSearchImage: {
+      width: '100%',
+      height: 120,
+      borderRadius: 8,
+    },
+    hotelSearchContent: {
+      padding: SPACING,
+    },
+    hotelSearchName: {
+      fontSize: 16,
+      fontWeight: '600',
+      marginBottom: SPACING / 2,
+    },
+    hotelSearchInfo: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    hotelSearchRating: {
+      fontSize: 14,
+      marginLeft: 4,
+      marginRight: SPACING,
+    },
+    hotelSearchPrice: {
+      fontSize: 14,
+      fontWeight: '600',
+    },
   });
 };
 
@@ -639,6 +772,7 @@ function HomeScreen() {
   const { currentUser, userData, isLoadingAuth } = useAuth(); // Using placeholder hook
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
+  const { colors } = useTheme();
   const styles = getThemedStyles(isDarkMode); // Get themed styles once
 
   // --- Use Saved Items Context ---
@@ -661,13 +795,199 @@ function HomeScreen() {
       console.log(`Failed to load image for ID: ${id}`);
   }, []);
 
+  const { search, searchResults, isSearching } = useSearch();
+  const [allData, setAllData] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // Combine all data for search
+  useEffect(() => {
+    const combinedData = [
+      ...(appData?.featuredDestinations || []),
+      ...(appData?.topRatedRestaurants || []),
+      ...(appData?.recommendedHotels || []),
+      ...(appData?.popularAttractions || [])
+    ];
+    setAllData(combinedData);
+  }, [appData]);
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+    search(query, allData);
+  };
+
+  const renderSearchResults = () => {
+    if (isSearching) {
+      return (
+        <View style={[styles.loadingContainer, { backgroundColor: colors.background }]}>
+          <ActivityIndicator size="large" color={colors.tint} />
+          <Text style={[styles.loadingText, { color: colors.text }]}>Searching...</Text>
+        </View>
+      );
+    }
+
+    if (searchResults.length > 0) {
+      // Filter hotels from search results
+      const hotels = searchResults.filter(item => item.type === 'hotel');
+      const otherResults = searchResults.filter(item => item.type !== 'hotel');
+
+      return (
+        <View style={[styles.searchResultsContainer, { backgroundColor: colors.background }]}>
+          {hotels.length > 0 && (
+            <View style={styles.hotelsSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Hotels</Text>
+              <FlatList
+                data={hotels}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+                renderItem={({ item }) => (
+                  <Pressable
+                    onPress={() => navigation.navigate('HotelDetail', { hotel: item, item, type: 'hotel' })}
+                    style={({ pressed }) => [
+                      styles.hotelSearchCard,
+                      { 
+                        backgroundColor: colors.card,
+                        opacity: pressed ? 0.8 : 1,
+                        transform: [{ scale: pressed ? 0.98 : 1 }]
+                      }
+                    ]}
+                  >
+                    <Image
+                      source={{ uri: item.image || fallbackPlaceholderImage }}
+                      style={styles.hotelSearchImage}
+                      onError={() => console.log(`Failed to load image for hotel: ${item.name}`)}
+                    />
+                    <View style={styles.hotelSearchContent}>
+                      <Text style={[styles.hotelSearchName, { color: colors.text }]} numberOfLines={1}>
+                        {item.name}
+                      </Text>
+                      <View style={styles.hotelSearchInfo}>
+                        <Ionicons name="star" size={14} color={colors.success} />
+                        <Text style={[styles.hotelSearchRating, { color: colors.secondary }]}>
+                          {item.rating || 'N/A'}
+                        </Text>
+                        <Text style={[styles.hotelSearchPrice, { color: colors.success }]}>
+                          {item.price || 'Price on request'}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                )}
+                contentContainerStyle={styles.hotelsList}
+              />
+            </View>
+          )}
+
+          {otherResults.length > 0 && (
+            <View style={styles.otherResultsSection}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Other Results</Text>
+              <FlatList
+                data={otherResults}
+                keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+                renderItem={({ item }) => {
+                  const itemType = item.type || 'location';
+                  const itemName = item.name || item.title || 'Untitled';
+                  const itemDescription = item.description || 'No description available';
+                  const itemImage = item.image || fallbackPlaceholderImage;
+
+                  const handleNavigation = () => {
+                    const navigationParams = {
+                      [itemType]: item,
+                      item: item,
+                      type: itemType
+                    };
+
+                    switch (itemType) {
+                      case 'restaurant':
+                        navigation.navigate('RestaurantDetail', navigationParams);
+                        break;
+                      case 'attraction':
+                        navigation.navigate('AttractionDetail', navigationParams);
+                        break;
+                      case 'destination':
+                        navigation.navigate('DestinationDetail', navigationParams);
+                        break;
+                      default:
+                        // For any other type, navigate to the appropriate detail screen
+                        if (itemType === 'location') {
+                          navigation.navigate('DestinationDetail', navigationParams);
+                        } else {
+                          console.warn(`No navigation handler for type: ${itemType}`);
+                        }
+                    }
+                  };
+
+                  return (
+                    <Pressable
+                      onPress={handleNavigation}
+                      style={({ pressed }) => [
+                        styles.searchResultItem,
+                        { 
+                          backgroundColor: colors.card,
+                          opacity: pressed ? 0.8 : 1,
+                          transform: [{ scale: pressed ? 0.98 : 1 }]
+                        }
+                      ]}
+                    >
+                      <Image
+                        source={{ uri: itemImage }}
+                        style={styles.searchResultImage}
+                        onError={() => console.log(`Failed to load image for item: ${itemName}`)}
+                      />
+                      <View style={styles.searchResultContent}>
+                        <View style={styles.searchResultHeader}>
+                          <Text style={[styles.searchResultTitle, { color: colors.text }]} numberOfLines={1}>
+                            {itemName}
+                          </Text>
+                          <View style={styles.searchResultType}>
+                            <Ionicons 
+                              name={
+                                itemType === 'restaurant' ? 'restaurant-outline' : 
+                                itemType === 'destination' ? 'location-outline' :
+                                itemType === 'location' ? 'location-outline' :
+                                'help-circle-outline'
+                              } 
+                              size={16} 
+                              color={colors.tint} 
+                            />
+                            <Text style={[styles.searchResultTypeText, { color: colors.tint }]}>
+                              {itemType.charAt(0).toUpperCase() + itemType.slice(1)}
+                            </Text>
+                          </View>
+                        </View>
+                        <Text style={[styles.searchResultDescription, { color: colors.secondary }]} numberOfLines={2}>
+                          {itemDescription}
+                        </Text>
+                      </View>
+                    </Pressable>
+                  );
+                }}
+                contentContainerStyle={styles.searchResultsList}
+                showsVerticalScrollIndicator={false}
+              />
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    return (
+      <View style={[styles.noResultsContainer, { backgroundColor: colors.background }]}>
+        <Ionicons name="search-outline" size={60} color={colors.secondary} />
+        <Text style={[styles.noResultsText, { color: colors.text }]}>
+          No results found
+        </Text>
+        <Text style={[styles.noResultsSubtext, { color: colors.secondary }]}>
+          Try different keywords
+        </Text>
+      </View>
+    );
+  };
 
   // --- Animations ---
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
-      scrollY.value = event.contentOffset.y;
-    },
-  });
+  const handleScroll = (event) => {
+    scrollY.value = event.nativeEvent.contentOffset.y;
+  };
 
   const headerAnimatedStyle = useAnimatedStyle(() => ({
     height: interpolate(
@@ -1020,17 +1340,16 @@ function HomeScreen() {
       >
         <AnimatedCard
           style={styles.outdoorActivityCard}
-          onPress={() => Alert.alert('Explore', `Find ${item.name} activities near you!`)} // Placeholder action
+          onPress={() => navigation.navigate(item.name)} // Updated to use item.name for navigation
           accessibilityLabel={`Explore ${item.name} activities`}
           isDarkMode={isDarkMode}
         >
-          {/* FIX: Use valid ionicon names - check initialMockData */}
           <Ionicons name={item.icon || 'help-circle-outline'} size={30} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
           <Text style={styles.outdoorActivityText}>{item.name}</Text>
         </AnimatedCard>
       </Animated.View>
     ),
-    [styles, isDarkMode]
+    [styles, isDarkMode, navigation]
   );
 
   const renderTransportInfo = useCallback(
@@ -1154,215 +1473,230 @@ function HomeScreen() {
         backgroundColor="transparent"
       />
 
-      {/* --- Animated Header --- */}
-      <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
-        <Animated.Image
-            source={{ uri: headerImageUrl }}
-            style={[styles.headerImageBackground, headerImageAnimatedStyle]}
-            resizeMode="cover"
-            onError={(e) => console.log(`Failed to load header image: ${headerImageUrl}`, e.nativeEvent.error)}
-        />
-         <Animated.View style={[styles.headerOverlay, headerImageAnimatedStyle]} />
-         <Animated.View style={[styles.headerContent, headerContentAnimatedStyle]}>
-             <Text style={styles.greetingText}>{formattedGreeting}</Text>
-             <Text style={styles.locationText}>{userLocation}</Text>
-             {weather && (
-               <View style={styles.weatherContainer}>
-                 {/* Use valid ionicon name */}
-                 <Ionicons name={weather.icon || 'thermometer-outline'} size={20} color={Colors.white} />
-                 <Text style={styles.weatherText}>{weather.temp}, {weather.condition}</Text>
-               </View>
-             )}
-         </Animated.View>
-      </Animated.View>
-
-      {/* --- Animated Search Bar --- */}
       <Animated.View style={[styles.searchBarContainer, searchBarAnimatedStyle]}>
-        <Pressable
-          style={styles.searchBarInner}
-          onPress={() => Alert.alert('Search', 'Search functionality coming soon!')}
-          accessibilityRole="search"
-        >
-          <Ionicons name="search-outline" size={20} color={styles.searchInput.color} style={styles.searchIcon} />
-          <Text style={styles.searchInput} numberOfLines={1}>
-              Search Bejaia...
-          </Text>
+        <View style={[styles.searchBarInner, { backgroundColor: colors.card }]}>
+          <Ionicons name="search-outline" size={20} color={colors.text} style={styles.searchIcon} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="Search destinations, hotels, restaurants..."
+            placeholderTextColor={colors.secondary}
+            onChangeText={handleSearch}
+            value={searchQuery}
+            autoFocus={true}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity
+              style={styles.searchButton}
+              onPress={() => {
+                setSearchQuery('');
+                handleSearch('');
+              }}
+              accessibilityLabel="Clear search"
+            >
+              <Ionicons name="close-circle" size={20} color={colors.tint} />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={styles.searchButton}
             onPress={() => Alert.alert('Filter', 'Filter options coming soon!')}
             accessibilityLabel="Filter options"
           >
-            <Ionicons name="options-outline" size={20} color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
+            <Ionicons name="options-outline" size={20} color={colors.tint} />
           </TouchableOpacity>
-        </Pressable>
+        </View>
       </Animated.View>
 
-      {/* --- Scrollable Content --- */}
-      <Animated.ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollViewContent}
-        onScroll={scrollHandler}
-        scrollEventThrottle={16} // Adjust throttle for performance if needed (16ms is ~60fps)
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={isDarkMode ? Colors.dark.tint : Colors.light.tint}
-            title="Refreshing..."
-            titleColor={isDarkMode ? Colors.dark.secondary : Colors.light.secondary}
-            colors={[isDarkMode ? Colors.dark.tint : Colors.light.tint]}
-            progressBackgroundColor={isDarkMode ? Colors.dark.cardBackground : Colors.light.cardBackground}
-          />
-        }
-      >
-        {/* Spacer View to push content below header */}
-        <View style={{ height: HEADER_MAX_HEIGHT }} />
-        {/* Spacer for search bar */}
-        <View style={{ height: SPACING * 3 }} />
-
-
-        {hasDestinations && (
-            <>
-                <SectionHeader
-                    title="Explore Bejaia"
-                    onSeeAll={() => navigation.navigate('Destinations')}
-                    isDarkMode={isDarkMode}
-                />
-                <FlatList
-                    data={destinationsData}
-                    keyExtractor={(item) => `dest-${item.id}`}
-                    renderItem={renderDestinationCard}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalListContent}
-                />
-            </>
-        )}
-
-        {hasHotels && (
-            <>
-                <SectionHeader
-                    title="Stay in Comfort"
-                    onSeeAll={() => navigation.navigate('Hotels')}
-                    isDarkMode={isDarkMode}
-                />
-                <FlatList
-                    data={hotelsData}
-                    keyExtractor={(item) => `hotel-${item.id}`}
-                    renderItem={renderHotelCard}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalListContent}
-                />
-            </>
-        )}
-
-        {hasRestaurants && (
-            <>
-                <SectionHeader
-                    title="Dine in Style"
-                    onSeeAll={() => navigation.navigate('Restaurants')}
-                    isDarkMode={isDarkMode}
-                />
-                <FlatList
-                    data={restaurantsData}
-                    keyExtractor={(item) => `rest-${item.id}`}
-                    renderItem={renderRestaurantCard}
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.horizontalListContent}
-                />
-            </>
-        )}
-
-        {hasAttractions && (
-             <>
-                <SectionHeader
-                    title="Must-Visit Spots"
-                    onSeeAll={() => navigation.navigate('Attractions')}
-                    isDarkMode={isDarkMode}
-                />
-                {/* Using FlatList for grid layout */}
-                <FlatList
-                    data={attractionsData}
-                    keyExtractor={(item) => `attr-${item.id}`}
-                    renderItem={renderAttractionCard}
-                    numColumns={2}
-                    // columnWrapperStyle handles horizontal spacing between columns/items
-                    columnWrapperStyle={styles.attractionsColumnWrapper}
-                    contentContainerStyle={styles.attractionsContentContainer}
-                    showsVerticalScrollIndicator={false}
-                    scrollEnabled={false} // Disable scroll inside the main scroll view
-                 />
-             </>
-        )}
-
-        {/* Updated Outdoor Activities Section */}
-        {hasOutdoor && (
-            <>
-                <SectionHeader
-                     title="Activities" // Corrected title
-                     isDarkMode={isDarkMode}
-                />
-                 <View style={styles.outdoorGridContainer}>
-                    {outdoorData.map((item, index) => renderOutdoorActivity(item, index))}
-                </View>
-            </>
-        )}
-
-
-        {hasInfo && (
-            <Animated.View entering={FadeInUp.duration(500).delay(200)}>
-              {/* Combined Info Card for Culture, History, Beaches */}
-              <View style={styles.infoCard}>
-                {cultureData.length > 0 && (
-                    <>
-                        <Text style={styles.infoTitle}>Culture & Traditions</Text>
-                        {cultureData.map((item, index) => renderInfoItem(item.description, `cult-${index}`))}
-                    </>
-                )}
-                {historyData.length > 0 && (
-                    <>
-                        <Text style={[styles.infoTitle, { marginTop: cultureData.length > 0 ? SPACING : 0 }]}>Historical Gems</Text>
-                        {historyData.map((item, index) => renderInfoItem(`${item.name}: ${item.description}`, `hist-${index}`))}
-                    </>
-                )}
-                {beachesData.length > 0 && (
-                   <>
-                        <Text style={[styles.infoTitle, { marginTop: (cultureData.length > 0 || historyData.length > 0) ? SPACING : 0 }]}>Beaches & Coastline</Text>
-                        {beachesData.map((item, index) => renderInfoItem(`${item.name}: ${item.description}`, `beach-${index}`))}
-                   </>
-                )}
-              </View>
-            </Animated.View>
-        )}
-
-        {hasTransport && (
-             <Animated.View entering={FadeInUp.duration(500).delay(300)}>
-                <SectionHeader title="Getting Around Bejaia" isDarkMode={isDarkMode} />
-                {/* Combined Transport Info Card */}
-                <View style={[styles.infoCard, { paddingVertical: SPACING * 0.5 }]}>
-                    {transportData.map((item, index) =>
-                        renderTransportInfo(item, index, index === transportData.length - 1)
-                    )}
-                </View>
+      {searchResults.length > 0 || isSearching || searchQuery.length > 0 ? (
+        renderSearchResults()
+      ) : (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollViewContent}
+          onScroll={handleScroll}
+          scrollEventThrottle={16}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.tint}
+              title="Refreshing..."
+              titleColor={colors.secondary}
+              colors={[colors.tint]}
+              progressBackgroundColor={colors.card}
+            />
+          }
+        >
+          {/* --- Animated Header --- */}
+          <Animated.View style={[styles.headerContainer, headerAnimatedStyle]}>
+            <Animated.Image
+                source={{ uri: headerImageUrl }}
+                style={[styles.headerImageBackground, headerImageAnimatedStyle]}
+                resizeMode="cover"
+                onError={(e) => console.log(`Failed to load header image: ${headerImageUrl}`, e.nativeEvent.error)}
+            />
+             <Animated.View style={[styles.headerOverlay, headerImageAnimatedStyle]} />
+             <Animated.View style={[styles.headerContent, headerContentAnimatedStyle]}>
+                 <Text style={styles.greetingText}>{formattedGreeting}</Text>
+                 <Text style={styles.locationText}>{userLocation}</Text>
+                 {weather && (
+                   <View style={styles.weatherContainer}>
+                     {/* Use valid ionicon name */}
+                     <Ionicons name={weather.icon || 'thermometer-outline'} size={20} color={Colors.white} />
+                     <Text style={styles.weatherText}>{weather.temp}, {weather.condition}</Text>
+                   </View>
+                 )}
              </Animated.View>
-        )}
+          </Animated.View>
 
-        {hasEmergency && (
-            <Animated.View entering={FadeInUp.duration(500).delay(400)}>
-                <SectionHeader title="Important Contacts" isDarkMode={isDarkMode} />
-                <View style={{ marginHorizontal: SPACING * 1.5, marginBottom: SPACING }}>
-                    {emergencyData.map((item, index) => renderEmergencyContact(item, index))}
+          {/* --- Scrollable Content --- */}
+          <View style={{ height: HEADER_MAX_HEIGHT }} />
+          {/* Spacer for search bar */}
+          <View style={{ height: SPACING * 3 }} />
+
+
+          {hasDestinations && (
+              <>
+                  <SectionHeader
+                      title="Explore Bejaia"
+                      onSeeAll={() => navigation.navigate('Destinations')}
+                      isDarkMode={isDarkMode}
+                  />
+                  <FlatList
+                      data={destinationsData}
+                      keyExtractor={(item) => `dest-${item.id}`}
+                      renderItem={renderDestinationCard}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.horizontalListContent}
+                  />
+              </>
+          )}
+
+          {hasHotels && (
+              <>
+                  <SectionHeader
+                      title="Stay in Comfort"
+                      onSeeAll={() => navigation.navigate('Hotels')}
+                      isDarkMode={isDarkMode}
+                  />
+                  <FlatList
+                      data={hotelsData}
+                      keyExtractor={(item) => `hotel-${item.id}`}
+                      renderItem={renderHotelCard}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.horizontalListContent}
+                  />
+              </>
+          )}
+
+          {hasRestaurants && (
+              <>
+                  <SectionHeader
+                      title="Dine in Style"
+                      onSeeAll={() => navigation.navigate('Restaurants')}
+                      isDarkMode={isDarkMode}
+                  />
+                  <FlatList
+                      data={restaurantsData}
+                      keyExtractor={(item) => `rest-${item.id}`}
+                      renderItem={renderRestaurantCard}
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      contentContainerStyle={styles.horizontalListContent}
+                  />
+              </>
+          )}
+
+          {hasAttractions && (
+               <>
+                  <SectionHeader
+                      title="Must-Visit Spots"
+                      onSeeAll={() => navigation.navigate('Attractions')}
+                      isDarkMode={isDarkMode}
+                  />
+                  {/* Using FlatList for grid layout */}
+                  <FlatList
+                      data={attractionsData}
+                      keyExtractor={(item) => `attr-${item.id}`}
+                      renderItem={renderAttractionCard}
+                      numColumns={2}
+                      // columnWrapperStyle handles horizontal spacing between columns/items
+                      columnWrapperStyle={styles.attractionsColumnWrapper}
+                      contentContainerStyle={styles.attractionsContentContainer}
+                      showsVerticalScrollIndicator={false}
+                      scrollEnabled={false} // Disable scroll inside the main scroll view
+                   />
+               </>
+          )}
+
+          {/* Updated Outdoor Activities Section */}
+          {hasOutdoor && (
+              <>
+                  <SectionHeader
+                       title="Activities" // Corrected title
+                       isDarkMode={isDarkMode}
+                  />
+                   <View style={styles.outdoorGridContainer}>
+                      {outdoorData.map((item, index) => renderOutdoorActivity(item, index))}
+                  </View>
+              </>
+          )}
+
+
+          {hasInfo && (
+              <Animated.View entering={FadeInUp.duration(500).delay(200)}>
+                {/* Combined Info Card for Culture, History, Beaches */}
+                <View style={styles.infoCard}>
+                  {cultureData.length > 0 && (
+                      <>
+                          <Text style={styles.infoTitle}>Culture & Traditions</Text>
+                          {cultureData.map((item, index) => renderInfoItem(item.description, `cult-${index}`))}
+                      </>
+                  )}
+                  {historyData.length > 0 && (
+                      <>
+                          <Text style={[styles.infoTitle, { marginTop: cultureData.length > 0 ? SPACING : 0 }]}>Historical Gems</Text>
+                          {historyData.map((item, index) => renderInfoItem(`${item.name}: ${item.description}`, `hist-${index}`))}
+                      </>
+                  )}
+                  {beachesData.length > 0 && (
+                     <>
+                          <Text style={[styles.infoTitle, { marginTop: (cultureData.length > 0 || historyData.length > 0) ? SPACING : 0 }]}>Beaches & Coastline</Text>
+                          {beachesData.map((item, index) => renderInfoItem(`${item.name}: ${item.description}`, `beach-${index}`))}
+                     </>
+                  )}
                 </View>
-            </Animated.View>
-        )}
+              </Animated.View>
+          )}
 
-        {/* Footer Spacer */}
-        <View style={{ height: SPACING * 5 }} />
+          {hasTransport && (
+               <Animated.View entering={FadeInUp.duration(500).delay(300)}>
+                  <SectionHeader title="Getting Around Bejaia" isDarkMode={isDarkMode} />
+                  {/* Combined Transport Info Card */}
+                  <View style={[styles.infoCard, { paddingVertical: SPACING * 0.5 }]}>
+                      {transportData.map((item, index) =>
+                          renderTransportInfo(item, index, index === transportData.length - 1)
+                      )}
+                  </View>
+               </Animated.View>
+          )}
 
-      </Animated.ScrollView>
+          {hasEmergency && (
+              <Animated.View entering={FadeInUp.duration(500).delay(400)}>
+                  <SectionHeader title="Important Contacts" isDarkMode={isDarkMode} />
+                  <View style={{ marginHorizontal: SPACING * 1.5, marginBottom: SPACING }}>
+                      {emergencyData.map((item, index) => renderEmergencyContact(item, index))}
+                  </View>
+              </Animated.View>
+          )}
+
+          {/* Footer Spacer */}
+          <View style={{ height: SPACING * 5 }} />
+
+        </ScrollView>
+      )}
     </View>
   );
 }
