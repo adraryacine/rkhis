@@ -12,28 +12,18 @@ import {
   Platform,
   TouchableOpacity,
   ActivityIndicator,
-  Pressable,
-  Alert,
+  TextInput,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Animated, {
   FadeInUp,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { useSavedItems } from '../contexts/SavedItemsContext';
+import { getTopRatedRestaurants } from '../services/dataService';
 
-// Import ONLY the useSavedItems hook and your ACTUAL data fetching function
-import { useSavedItems } from '../contexts/SavedItemsContext'; // Ensure this path is correct
-import { getTopRatedRestaurants } from '../services/dataService'; // <--- Import the specific fetch function
-
-
-// --- LOCAL Re-definition of ALL Constants and Styles needed for THIS screen ---
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const SPACING = 16;
-// Include any other constants specific to THIS screen's layout or appearance
-// const SOME_OTHER_CONSTANT = 10;
 
 const Colors = {
   light: {
@@ -41,299 +31,284 @@ const Colors = {
     background: '#ffffff',
     tint: '#007AFF',
     secondary: '#6b7280',
-    border: '#e5e7eb',
     cardBackground: '#ffffff',
+    success: '#00C853',
     placeholder: '#9ca3af',
-    success: '#10b981',
-    danger: '#ef4444',
-    black: '#000000',
   },
   dark: {
     text: '#ecf0f1',
     background: '#121212',
     tint: '#0A84FF',
     secondary: '#a1a1aa',
-    border: '#374151',
     cardBackground: '#1e1e1e',
+    success: '#00E676',
     placeholder: '#71717a',
-    success: '#34d399',
-    danger: '#f87171',
-    black: '#000000',
   },
-  white: '#ffffff',
 };
 
-const CARD_SHADOW = {
-  shadowColor: Colors.light.black,
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 4,
-};
-
-const fallbackPlaceholderImage = 'https://via.placeholder.com/300x200/cccccc/969696?text=Image+Error';
-
-// --- LOCAL Definition of getThemedStyles including ALL styles for THIS screen ---
 const getThemedStyles = (isDarkMode = false) => {
   const colors = isDarkMode ? Colors.dark : Colors.light;
-  const dynamicCardShadow = {
-    ...CARD_SHADOW,
-    shadowColor: colors.black,
-  };
 
   return StyleSheet.create({
-    screenContainer: {
+    container: {
       flex: 1,
       backgroundColor: colors.background,
     },
+    searchContainer: {
+      padding: SPACING,
+      paddingTop: Platform.OS === 'ios' ? 50 : SPACING,
+      backgroundColor: colors.background,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBackground,
+      borderRadius: 25,
+      padding: SPACING,
+      marginHorizontal: 4,
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+        },
+        android: {
+          elevation: 4,
+        },
+      }),
+    },
+    searchIcon: {
+      marginRight: SPACING,
+      opacity: 0.5,
+    },
+    searchInput: {
+      flex: 1,
+      fontSize: 16,
+      color: colors.text,
+    },
     listContainer: {
-        padding: SPACING,
-        paddingTop: SPACING * 2,
-        paddingBottom: SPACING,
+      padding: SPACING,
     },
-    listItemContainer: {
-         marginBottom: SPACING,
+    restaurantCard: {
+      backgroundColor: colors.cardBackground,
+      borderRadius: 25,
+      marginBottom: SPACING,
+      overflow: 'hidden',
+      ...Platform.select({
+        ios: {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.1,
+          shadowRadius: 12,
+        },
+        android: {
+          elevation: 8,
+        },
+      }),
     },
-     // Reusable Card Base style needed by AnimatedCard (Define it here)
-    cardBase: {
-        backgroundColor: colors.cardBackground,
-        borderRadius: SPACING * 1.5,
-        ...dynamicCardShadow,
-        overflow: 'hidden',
+    restaurantImage: {
+      width: '100%',
+      height: 180,
+      backgroundColor: '#8895a7',
     },
-    // Styles for Restaurants List (Horizontal Card Layout)
-     restaurantListItemCard: {
-        width: '100%',
-        aspectRatio: undefined,
-        height: 120, // Fixed height for horizontal item
-        borderRadius: SPACING * 1.5,
-        overflow: 'hidden',
-        backgroundColor: colors.border, // Placeholder color
-        ...dynamicCardShadow,
-        backgroundColor: colors.cardBackground, // Use card background color
-        flexDirection: 'row', // Arrange image and content horizontally
-        alignItems: 'center', // Vertically center items in the row
+    infoContainer: {
+      padding: SPACING,
+      paddingTop: SPACING / 2,
     },
-    restaurantListItemImage: {
-         width: '35%', // Image takes 35% of card width
-         height: '100%', // Image takes full height of card
-         backgroundColor: colors.secondary, // Placeholder
+    row: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 4,
     },
-    restaurantListItemContent: { // Container for text content and save button in horizontal list
-        flex: 1, // Takes remaining width
-        padding: SPACING,
-        justifyContent: 'center', // Vertically center content
-        position: 'relative',
+    name: {
+      fontSize: 22,
+      fontWeight: '700',
+      color: colors.text,
+      flex: 1,
     },
-     restaurantListItemTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: 4,
-     },
-     restaurantListItemDetails: {
-        fontSize: 14,
-        color: colors.secondary,
-     },
-     saveButtonListRight: {
-       position: 'absolute',
-       top: SPACING * 0.5,
-       right: SPACING * 0.5,
-       backgroundColor: 'rgba(0, 0, 0, 0.2)',
-       borderRadius: 15,
-       padding: SPACING * 0.4,
-       zIndex: 5,
+    priceContainer: {
+      backgroundColor: colors.success,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      marginLeft: SPACING,
     },
-     ratingContainer: {
-       flexDirection: 'row',
-       alignItems: 'center',
-       marginBottom: 4,
-     },
-     hotelRating: { // Reusing this text style for consistency
-       fontSize: 14,
-       color: colors.secondary,
-       marginLeft: SPACING * 0.5,
-     },
-    emptyListContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING * 2,
-        minHeight: Dimensions.get('window').height * 0.5,
+    price: {
+      color: '#fff',
+      fontWeight: '600',
+      fontSize: 16,
     },
-     emptyListText: {
-        marginTop: SPACING,
-        fontSize: 16,
-        color: colors.secondary,
-        textAlign: 'center',
-     },
-     secondaryText: {
-        color: colors.secondary,
-     },
-     loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING * 2,
-         minHeight: Dimensions.get('window').height * 0.5,
-     },
-      loadingText: {
-         marginTop: SPACING,
-         fontSize: 16,
-         color: colors.tint,
-         fontWeight: '600',
-      },
+    ratingContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    ratingStars: {
+      flexDirection: 'row',
+      marginRight: 4,
+    },
+    rating: {
+      fontSize: 18,
+      color: colors.success,
+      fontWeight: '600',
+    },
+    saveButton: {
+      position: 'absolute',
+      top: SPACING,
+      right: SPACING,
+      backgroundColor: 'rgba(0, 0, 0, 0.3)',
+      borderRadius: 20,
+      width: 40,
+      height: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
   });
 };
-
-// --- LOCAL Re-definition of AnimatedCard component ---
-const AnimatedCard = React.memo(({ children, style, onPress, accessibilityLabel, isDarkMode }) => {
-  const scale = useSharedValue(1);
-  const styles = getThemedStyles(isDarkMode); // Call getThemedStyles inside the component
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(scale.value, { damping: 15, stiffness: 150 }) }],
-  }));
-
-  return (
-    <Animated.View style={[styles.cardBase, style]}> // Use local base card style
-        <Pressable
-            onPress={onPress}
-            onPressIn={() => (scale.value = 0.96)}
-            onPressOut={() => (scale.value = 1)}
-            accessibilityLabel={accessibilityLabel}
-            style={{ flex: 1 }}
-        >
-            <Animated.View style={[{flex: 1}, animatedStyle]}>
-                 {children}
-            </Animated.View>
-        </Pressable>
-    </Animated.View>
-  );
-});
-
 
 function RestaurantsScreen() {
   const navigation = useNavigation();
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const styles = getThemedStyles(isDarkMode);
-
   const { isItemSaved, toggleSaveItem } = useSavedItems();
 
-  const [restaurantsData, setRestaurantsData] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [filteredRestaurants, setFilteredRestaurants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [imageErrors, setImageErrors] = useState({});
 
-
-  // Fetch data when the component mounts
   useEffect(() => {
-      const loadData = async () => {
-          setIsLoading(true);
-          setError(null);
-          try {
-              const data = await getTopRatedRestaurants(); // <--- CALL THE IMPORTED FETCH FUNCTION
-              setRestaurantsData(data);
-          } catch (err) {
-              console.error("Error loading restaurants:", err);
-              setError("Failed to load restaurants. Please try again later.");
-              setRestaurantsData([]);
-              // Alert.alert("Error", "Failed to load restaurants data.");
-          } finally {
-              setIsLoading(false);
-          }
-      };
-      loadData();
+    const loadRestaurants = async () => {
+      try {
+        const data = await getTopRatedRestaurants();
+        console.log('Fetched restaurants:', data);
+        setRestaurants(data);
+        setFilteredRestaurants(data);
+      } catch (err) {
+        console.error('Error loading restaurants:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadRestaurants();
   }, []);
 
+  useEffect(() => {
+    if (searchQuery.trim() === '') {
+      setFilteredRestaurants(restaurants);
+    } else {
+      const filtered = restaurants.filter(restaurant =>
+        restaurant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        restaurant.cuisine?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRestaurants(filtered);
+    }
+  }, [searchQuery, restaurants]);
+
+  const handleImageError = useCallback((itemId) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  }, []);
 
   const renderRestaurantItem = useCallback(({ item, index }) => (
-    <Animated.View entering={FadeInUp.delay(index * 50).duration(400)} style={styles.listItemContainer}>
-      <AnimatedCard
-        style={styles.restaurantListItemCard} // Use specific restaurant list card style
-        onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id, item: item, itemType: 'restaurant' })}
-        accessibilityLabel={`View details for ${item.name}, Rating ${item.rating}`}
-        isDarkMode={isDarkMode}
+    <Animated.View
+      entering={FadeInUp.delay(index * 100)}
+      style={styles.restaurantCard}
+    >
+      <TouchableOpacity
+        activeOpacity={0.95}
+        onPress={() => navigation.navigate('RestaurantDetail', { 
+          itemId: item.id,
+          item: item,
+          itemType: 'restaurant'
+        })}
       >
-         <Image
-             source={{ uri: item.image || fallbackPlaceholderImage }}
-             style={styles.restaurantListItemImage} // Use specific restaurant list image style
-             resizeMode="cover"
-         />
-          <View style={styles.restaurantListItemContent}> // Use specific restaurant list content style
-            <View> {/* Wrapper for name, rating, details */}
-                <Text style={styles.restaurantListItemTitle} numberOfLines={1}>{item.name}</Text>
-                 <View style={styles.ratingContainer}>
-                   {/* Check if rating exists before showing stars */}
-                   {item.rating && item.rating > 0 ? (
-                       <>
-                            {/* Render stars based on rating (simple representation) */}
-                            {Array(Math.round(item.rating)).fill(null).map((_, i) => (
-                                <Ionicons key={i} name="star" size={16} color={Colors.light.success} />
-                            ))}
-                            <Text style={styles.hotelRating}>{item.rating} Stars</Text>
-                       </>
-                   ) : (
-                        <Text style={styles.hotelRating}>No Rating</Text>
-                   )}
-                 </View>
-                <Text style={styles.restaurantListItemDetails}>{item.cuisine} • {item.priceRange}</Text>
+        <Image
+          source={{ 
+            uri: imageErrors[item.id] 
+              ? 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Restaurant'
+              : item.image 
+          }}
+          style={styles.restaurantImage}
+          resizeMode="cover"
+          onError={() => handleImageError(item.id)}
+        />
+        <TouchableOpacity
+          style={styles.saveButton}
+          onPress={() => toggleSaveItem(item, 'restaurant')}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons
+            name={isItemSaved(item, 'restaurant') ? 'bookmark' : 'bookmark-outline'}
+            size={24}
+            color="white"
+          />
+        </TouchableOpacity>
+        <View style={styles.infoContainer}>
+          <View style={styles.row}>
+            <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.price}>{item.priceRange}</Text>
             </View>
-             {/* Save Button */}
-            <TouchableOpacity
-                style={styles.saveButtonListRight} // Use specific restaurant list save button style
-                onPress={() => toggleSaveItem(item, 'restaurant')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityLabel={isItemSaved(item, 'restaurant') ? `Remove ${item.name} from saved` : `Save ${item.name}`}
-            >
-                <Ionicons
-                    name={isItemSaved(item, 'restaurant') ? 'bookmark' : 'bookmark-outline'}
-                    size={24}
-                    color={isItemSaved(item, 'restaurant') ? Colors.light.tint : (isDarkMode ? Colors.dark.secondary : Colors.light.secondary)} // Use themed secondary when not saved
-                />
-            </TouchableOpacity>
           </View>
-      </AnimatedCard>
+          <View style={styles.ratingContainer}>
+            <View style={styles.ratingStars}>
+              {Array(Math.floor(item.rating)).fill(null).map((_, i) => (
+                <Ionicons key={i} name="star" size={16} color={Colors[isDarkMode ? 'dark' : 'light'].success} />
+              ))}
+            </View>
+            <Text style={styles.rating}>{item.rating}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
     </Animated.View>
-  ), [navigation, styles, isDarkMode, isItemSaved, toggleSaveItem]);
+  ), [navigation, styles, isItemSaved, toggleSaveItem, isDarkMode, imageErrors, handleImageError]);
 
+  if (isLoading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={Colors[isDarkMode ? 'dark' : 'light'].tint} />
+      </View>
+    );
+  }
 
   return (
-    <View style={styles.screenContainer}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={styles.screenContainer.backgroundColor}
+    <View style={styles.container}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBar}>
+          <Ionicons 
+            name="search" 
+            size={22} 
+            color={Colors[isDarkMode ? 'dark' : 'light'].placeholder} 
+            style={styles.searchIcon} 
+          />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search restaurants..."
+            placeholderTextColor={Colors[isDarkMode ? 'dark' : 'light'].placeholder}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+        </View>
+      </View>
+      <FlatList
+        data={filteredRestaurants}
+        renderItem={renderRestaurantItem}
+        keyExtractor={item => item.id}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
       />
-      {isLoading ? (
-           <View style={styles.loadingContainer}>
-               <ActivityIndicator size="large" color={styles.loadingText.color} />
-               <Text style={styles.loadingText}>Loading Restaurants...</Text>
-           </View>
-      ) : error ? (
-           <View style={styles.emptyListContainer}>
-                <Ionicons name="warning-outline" size={60} color={styles.secondaryText.color} />
-               <Text style={styles.emptyListText}>{error}</Text>
-           </View>
-      ) : (
-           <FlatList
-             data={restaurantsData}
-             keyExtractor={(item) => `list-rest-${item.id}`}
-             renderItem={renderRestaurantItem}
-             contentContainerStyle={styles.listContainer}
-             showsVerticalScrollIndicator={false}
-             ListEmptyComponent={() => (
-                 restaurantsData.length === 0 ? (
-                     <View style={styles.emptyListContainer}>
-                          <Ionicons name="restaurant-outline" size={60} color={styles.secondaryText.color} />
-                         <Text style={styles.emptyListText}>No restaurants found.</Text>
-                     </View>
-                 ) : null
-             )}
-           />
-      )}
     </View>
   );
 }
-
 
 export default RestaurantsScreen;

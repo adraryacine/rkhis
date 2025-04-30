@@ -22,7 +22,7 @@ const {
 const { Ionicons } = require('@expo/vector-icons');
 const { useNavigation, useRoute } = require('@react-navigation/native');
 const { LinearGradient } = require('expo-linear-gradient');
-const { addDoc, collection, serverTimestamp, doc, getDoc } = require('firebase/firestore');
+const { addDoc, collection, serverTimestamp, doc, getDoc, query, where, onSnapshot } = require('firebase/firestore');
 const { db } = require('../firebase');
 const { useLanguage } = require('../contexts/LanguageContext');
 
@@ -331,6 +331,11 @@ function HotelReservationScreen() {
   const { t } = useLanguage();
   const styles = getThemedReservationStyles(colors);
 
+  // Add state for hotels list
+  const [hotels, setHotels] = React.useState([]);
+  const [isLoadingHotels, setIsLoadingHotels] = React.useState(true);
+  const [hotelsError, setHotelsError] = React.useState(null);
+
   // Check if we're in booking mode (have hotel details from route)
   const isBookingMode = route.params?.hotelId != null;
   
@@ -348,8 +353,107 @@ function HotelReservationScreen() {
   const [showGuestRoomPicker, setShowGuestRoomPicker] = React.useState(false);
   const [guestRoomPickerType, setGuestRoomPickerType] = React.useState('guests');
 
+  // Fetch hotels when not in booking mode
+  React.useEffect(() => {
+    if (!isBookingMode) {
+      const fetchHotels = async () => {
+        try {
+          setIsLoadingHotels(true);
+          setHotelsError(null);
+
+          if (!db) {
+            throw new Error('Database not initialized');
+          }
+
+          const hotelsCollection = collection(db, 'hotels');
+          const q = query(hotelsCollection);
+
+          const unsubscribe = onSnapshot(q, 
+            (querySnapshot) => {
+              try {
+                const hotelsData = [];
+                querySnapshot.forEach((doc) => {
+                  if (doc.exists()) {
+                    hotelsData.push({
+                      id: doc.id,
+                      ...doc.data()
+                    });
+                  }
+                });
+                setHotels(hotelsData);
+                setIsLoadingHotels(false);
+              } catch (error) {
+                console.error('Error processing hotel data:', error);
+                setHotelsError('Error processing hotel data');
+                setIsLoadingHotels(false);
+              }
+            },
+            (error) => {
+              console.error('Error fetching hotels:', error);
+              setHotelsError('Failed to load hotels. Please try again.');
+              setIsLoadingHotels(false);
+            }
+          );
+
+          return unsubscribe;
+        } catch (error) {
+          console.error('Error in fetchHotels:', error);
+          setHotelsError(error.message || 'An unexpected error occurred');
+          setIsLoadingHotels(false);
+        }
+      };
+
+      fetchHotels();
+    }
+  }, [isBookingMode]);
+
+  // Add a helper function to format location
+  const formatLocation = (location) => {
+    if (typeof location === 'string') {
+      return location;
+    }
+    if (location && typeof location === 'object') {
+      if (location.latitude && location.longitude) {
+        return `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+      }
+      if (location.address) {
+        return location.address;
+      }
+    }
+    return 'Location not available';
+  };
+
   // If not in booking mode, render the hotel list view
   if (!isBookingMode) {
+    if (isLoadingHotels) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <ActivityIndicator size="large" color={colors.accent} />
+          <Text style={[styles.sectionTitle, { marginTop: SPACING }]}>Loading hotels...</Text>
+        </View>
+      );
+    }
+
+    if (hotelsError) {
+      return (
+        <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Ionicons name="alert-circle" size={48} color={colors.primaryRed} />
+          <Text style={[styles.sectionTitle, { marginTop: SPACING, color: colors.primaryRed }]}>
+            {hotelsError}
+          </Text>
+          <TouchableOpacity
+            style={[styles.confirmButton, { marginTop: SPACING }]}
+            onPress={() => {
+              setIsLoadingHotels(true);
+              setHotelsError(null);
+            }}
+          >
+            <Text style={styles.confirmButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
     return (
       <View style={styles.container}>
         <FlatList
@@ -362,7 +466,7 @@ function HotelReservationScreen() {
               <Image source={{ uri: item.image }} style={styles.hotelImage} />
               <View style={styles.hotelInfo}>
                 <Text style={styles.hotelName}>{item.name}</Text>
-                <Text style={styles.hotelLocation}>{item.location}</Text>
+                <Text style={styles.hotelLocation}>{formatLocation(item.location)}</Text>
                 <Text style={styles.hotelPrice}>{`$${item.price}/night`}</Text>
               </View>
             </TouchableOpacity>
@@ -458,7 +562,7 @@ function HotelReservationScreen() {
         />
         <View style={styles.headerContent}>
           <Text style={styles.hotelName}>{hotelDetails?.name}</Text>
-          <Text style={styles.hotelLocation}>{hotelDetails?.location}</Text>
+          <Text style={styles.hotelLocation}>{formatLocation(hotelDetails?.location)}</Text>
           <View style={styles.priceContainer}>
             <Text style={styles.price}>${hotelDetails?.price}</Text>
             <Text style={styles.perNight}>/night</Text>

@@ -1271,7 +1271,11 @@ function HomeScreen() {
         <AnimatedCard
           style={styles.restaurantCard}
           // Pass the full item object to the detail screen
-          onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id, item: item, type: 'restaurant' })} // Pass item and type
+          onPress={() => navigation.navigate('RestaurantDetail', { 
+            itemId: item.id, 
+            item: item, 
+            itemType: 'restaurant' 
+          })}
           accessibilityLabel={`View details for ${item.name}, Cuisine: ${item.cuisine}, Price Range: ${item.priceRange}`}
           isDarkMode={isDarkMode}
         >

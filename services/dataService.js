@@ -39,16 +39,149 @@ const mockData = {
       { id: 'event4', name: 'Olive Harvest Celebration', date: 'Nov 2024', location: 'Nearby Villages', image: 'https://via.placeholder.com/160x110/228B22/FFFFFF?text=Olive+Harvest' },
     ],
      topRatedRestaurants: [
-      { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg', priceRange: '$$$' },
-      { id: 'rest2', name: 'Restaurant El Djenina', rating: 4.6, cuisine: 'Algerian, Grills', image: 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg', priceRange: '$$' },
+      { 
+        id: 'rest1', 
+        name: 'Le Dauphin Bleu', 
+        rating: 4.8, 
+        cuisine: 'Seafood, Mediterranean', 
+        image: 'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg', 
+        priceRange: '$$$',
+        description: 'A fine dining experience with fresh seafood and Mediterranean cuisine.',
+        location: {
+          latitude: 36.7538,
+          longitude: 5.0569,
+          address: 'Port de Bejaia'
+        },
+        images: [
+          'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg',
+          'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/49/le-dauphin-bleu.jpg'
+        ],
+        menu: [
+          { name: 'Grilled Sea Bass', price: '$25' },
+          { name: 'Seafood Paella', price: '$30' }
+        ],
+        reviews: [
+          { user: 'John D.', rating: 5.0, comment: 'Amazing seafood!' },
+          { user: 'Sarah M.', rating: 4.5, comment: 'Great atmosphere and service' }
+        ]
+      },
+      { 
+        id: 'rest2', 
+        name: 'Restaurant El Djenina', 
+        rating: 4.6, 
+        cuisine: 'Algerian, Grills', 
+        image: 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg', 
+        priceRange: '$$',
+        description: 'Traditional Algerian cuisine with a modern twist.',
+        location: {
+          latitude: 36.7540,
+          longitude: 5.0570,
+          address: 'Rue de la Liberté, Bejaia'
+        },
+        images: [
+          'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg',
+          'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8b/restaurant-el-djenina.jpg'
+        ],
+        menu: [
+          { name: 'Couscous Royal', price: '$18' },
+          { name: 'Mixed Grill Platter', price: '$22' }
+        ],
+        reviews: [
+          { user: 'Ahmed K.', rating: 4.8, comment: 'Authentic Algerian flavors' },
+          { user: 'Marie L.', rating: 4.4, comment: 'Delicious food and friendly staff' }
+        ]
+      },
       { id: 'rest3', name: 'La Voile d\'Or', rating: 4.5, cuisine: 'Italian, Pizza', image: 'https://media-cdn.tripadvisor.com/media/photo-s/13/6c/a4/95/la-voile-d-or.jpg', priceRange: '$$' },
       { id: 'rest4', name: 'Pizzeria Venezia', rating: 4.4, cuisine: 'Pizza, Fast Food', image: 'https://media-cdn.tripadvisor.com/media/photo-f/05/e3/7e/5a/pizzeria-venezia.jpg', priceRange: '$' },
     ],
     recommendedHotels: [
-      { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '~$140', rating: 4.7, image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0d/hotel-exterior.jpg?w=1200&h=-1&s=1', amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860, address: 'Rue Aissat Idir, Bejaia', phone: '+21334xxxxxx', website: 'http://hotelroyalbejaia.com' },
-      { id: 'hotel2', name: 'Hotel Zedek', price: '~$110', rating: 4.3, image: 'https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/296065364.jpg?k=f8b5c3e0b2a2a625f1a6d6a17907c6a1e2c4c4a5a4f3a1c6f9e7b8d0a6b1c3d4&o=', amenities: ['Restaurant', 'Free WiFi'], latitude: 36.7510, longitude: 5.0870, address: 'Rue de la Liberté, Bejaia', phone: '+21334xxxxxx' },
-      { id: 'hotel3', name: 'Le Cristal Hotel', price: '~$130', rating: 4.5, image: 'https://le-cristal-hotel-bejaia.booked.net/data/Photos/OriginalPhoto/11874/1187419/1187419507/Le-Cristal-Hotel-Bejaia-Exterior.JPEG', amenities: ['Beachfront', 'Restaurant'], latitude: 36.7500, longitude: 5.0840, address: 'Corniche, Bejaia' },
-      { id: 'hotel4', name: 'Hotel Les Hammadites (Tichy)', price: '~$160', rating: 4.6, image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/29/25/63/hotel-les-hammadites.jpg?w=1200&h=-1&s=1', amenities: ['Private Beach', 'Pool', 'Tennis'], latitude: 36.7650, longitude: 5.1200, address: 'Tichy Corniche' },
+      { 
+        id: 'hotel1', 
+        name: 'Hotel Royal Bejaia', 
+        price: '$140/night', 
+        rating: 4.7, 
+        image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0d/hotel-exterior.jpg', 
+        amenities: ['Pool', 'Spa', 'Restaurant', 'Free WiFi', 'Sea View'], 
+        address: 'Rue Aissat Idir, Bejaia', 
+        phone: '+21334xxxxxx', 
+        website: 'http://hotelroyalbejaia.com',
+        description: 'Luxury hotel with stunning sea views and modern amenities.',
+        latitude: 36.7520,
+        longitude: 5.0860,
+        images: [
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0d/hotel-exterior.jpg',
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/1c/1a/9b/0e/hotel-pool.jpg'
+        ],
+        rooms: [
+          { type: 'Standard', price: '$140', capacity: 2 },
+          { type: 'Deluxe', price: '$180', capacity: 2 },
+          { type: 'Suite', price: '$250', capacity: 4 }
+        ],
+        reviews: [
+          { user: 'David W.', rating: 4.8, comment: 'Excellent service and location' },
+          { user: 'Emma R.', rating: 4.6, comment: 'Beautiful views and comfortable rooms' }
+        ]
+      },
+      { 
+        id: 'hotel2', 
+        name: 'Hotel Zedek', 
+        price: '$110/night', 
+        rating: 4.3, 
+        image: 'https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/296065364.jpg', 
+        amenities: ['Restaurant', 'Free WiFi', 'City Center', 'Business Center'], 
+        address: 'Rue de la Liberté, Bejaia',
+        description: 'Comfortable hotel in the heart of the city.',
+        latitude: 36.7510,
+        longitude: 5.0870,
+        images: [
+          'https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/296065364.jpg',
+          'https://q-xx.bstatic.com/xdata/images/hotel/max1024x768/296065365.jpg'
+        ],
+        rooms: [
+          { type: 'Standard', price: '$110', capacity: 2 },
+          { type: 'Family', price: '$150', capacity: 4 }
+        ],
+        reviews: [
+          { user: 'Michael B.', rating: 4.4, comment: 'Good value for money' },
+          { user: 'Sophie T.', rating: 4.2, comment: 'Clean and comfortable' }
+        ]
+      },
+      { 
+        id: 'hotel3', 
+        name: 'Le Cristal Hotel', 
+        price: '$130/night', 
+        rating: 4.5, 
+        image: 'https://le-cristal-hotel-bejaia.booked.net/data/Photos/OriginalPhoto/11874/1187419/1187419507/Le-Cristal-Hotel-Bejaia-Exterior.JPEG', 
+        amenities: ['Beachfront', 'Restaurant', 'Free WiFi', 'Pool'], 
+        address: 'Corniche, Bejaia',
+        latitude: 36.7500,
+        longitude: 5.0840,
+        description: 'Modern beachfront hotel with excellent amenities.',
+        images: [
+          'https://le-cristal-hotel-bejaia.booked.net/data/Photos/OriginalPhoto/11874/1187419/1187419507/Le-Cristal-Hotel-Bejaia-Exterior.JPEG'
+        ],
+        reviews: [
+          { user: 'Alice R.', rating: 4.6, comment: 'Great beachfront location' }
+        ]
+      },
+      { 
+        id: 'hotel4', 
+        name: 'Hotel Les Hammadites', 
+        price: '$160/night', 
+        rating: 4.6, 
+        image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/29/25/63/hotel-les-hammadites.jpg?w=1200&h=-1&s=1', 
+        amenities: ['Private Beach', 'Pool', 'Tennis', 'Spa', 'Restaurant'], 
+        address: 'Tichy Corniche, Tichy',
+        latitude: 36.7650,
+        longitude: 5.1200,
+        description: 'Luxury beach resort with extensive facilities.',
+        images: [
+          'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/29/25/63/hotel-les-hammadites.jpg?w=1200&h=-1&s=1'
+        ],
+        reviews: [
+          { user: 'James P.', rating: 4.7, comment: 'Amazing beach resort' }
+        ]
+      }
     ],
     popularAttractions: [
       { id: 'attr1', name: 'Gouraya Park', description: 'Nature & Views', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg/1024px-Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%B0.jpg', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD', address: 'Mount Gouraya, Bejaia' },
@@ -156,17 +289,88 @@ const getUpcomingEvents = async () => {
 };
 
 const getTopRatedRestaurants = async () => {
-     // Example: Order by 'rating' descending and limit
-    return fetchFromFirestore('restaurants', mockData.topRatedRestaurants,
-        (colRef) => query(colRef, orderBy('rating', 'desc'), limit(10)) // Example orderBy
-    );
+    try {
+        if (!db) {
+            console.warn('Firestore DB not initialized, returning mock data');
+            return mockData.topRatedRestaurants;
+        }
+
+        const restaurantsCollection = collection(db, 'restaurants');
+        const q = query(restaurantsCollection, orderBy('rating', 'desc'), limit(10));
+        
+        const querySnapshot = await getDocs(q);
+        const restaurants = [];
+        
+        querySnapshot.forEach((doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                console.log('Restaurant document data:', data);
+                restaurants.push({
+                    id: doc.id,
+                    ...data
+                });
+            }
+        });
+
+        if (restaurants.length === 0) {
+            console.log('No restaurants found in Firestore, returning mock data');
+            return mockData.topRatedRestaurants;
+        }
+
+        console.log('Final restaurants array:', restaurants);
+        return restaurants;
+    } catch (error) {
+        console.error('Error fetching restaurants:', error);
+        return mockData.topRatedRestaurants;
+    }
 };
 
 const getRecommendedHotels = async () => {
-    // Example: Order by 'rating' descending and limit
-    return fetchFromFirestore('hotels', mockData.recommendedHotels,
-         (colRef) => query(colRef, orderBy('rating', 'desc'), limit(10)) // Adjust query as needed
-    );
+    try {
+        if (!db) {
+            console.warn('Firestore DB not initialized, returning mock data');
+            return mockData.recommendedHotels;
+        }
+
+        const hotelsCollection = collection(db, 'hotels');
+        const q = query(hotelsCollection, orderBy('rating', 'desc'), limit(10));
+        
+        const querySnapshot = await getDocs(q);
+        const hotels = [];
+        
+        querySnapshot.forEach((doc) => {
+            if (doc.exists()) {
+                const data = doc.data();
+                hotels.push({
+                    id: doc.id,
+                    name: data.name || 'Unknown Hotel',
+                    rating: data.rating || 4.0,
+                    price: data.price || '~$100',
+                    image: data.image || data.images?.[0] || 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Hotel',
+                    amenities: data.amenities || ['Free WiFi'],
+                    address: data.address || data.location?.address || 'Bejaia',
+                    description: data.description || '',
+                    latitude: data.latitude || data.location?.latitude,
+                    longitude: data.longitude || data.location?.longitude,
+                    images: data.images || [data.image] || [],
+                    rooms: data.rooms || [],
+                    reviews: data.reviews || [],
+                    ...data
+                });
+            }
+        });
+
+        if (hotels.length === 0) {
+            console.log('No hotels found in Firestore, returning mock data');
+            return mockData.recommendedHotels;
+        }
+
+        console.log('Final hotels array:', hotels);
+        return hotels;
+    } catch (error) {
+        console.error('Error fetching hotels:', error);
+        return mockData.recommendedHotels;
+    }
 };
 
 const getPopularAttractions = async () => {
@@ -226,6 +430,11 @@ const getAttractionDetails = async (id) => {
 const getHotelDetails = async (id) => {
     const mockItem = mockData.recommendedHotels.find(item => item.id === id) || null;
     return fetchDetailFromFirestore('hotels', id, mockItem);
+};
+
+const getRestaurantDetails = async (id) => {
+    const mockItem = mockData.topRatedRestaurants.find(item => item.id === id) || null;
+    return fetchDetailFromFirestore('restaurants', id, mockItem);
 };
 
 
@@ -449,6 +658,7 @@ export {
   getPopularAttractions,
   getAttractionDetails, // For detail screen
   getHotelDetails, // For detail screen
+  getRestaurantDetails, // For restaurant detail screen
 
   // Export mock data if needed elsewhere for reference or pure mock screens
   mockData // Optional export

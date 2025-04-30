@@ -33,23 +33,41 @@ const generateHotels = (count) => {
 
 const generateRestaurants = (count) => {
   const restaurants = [];
+  const cuisines = ['Algerian', 'Italian', 'French', 'Chinese', 'Japanese', 'Mexican'];
+  const priceRanges = ['$', '$$', '$$$'];
+  
   for (let i = 1; i <= count; i++) {
+    const cuisine = cuisines[Math.floor(Math.random() * cuisines.length)];
+    const priceRange = priceRanges[Math.floor(Math.random() * priceRanges.length)];
+    const rating = (Math.random() * 2 + 3).toFixed(1);
+    
     restaurants.push({
       id: `restaurant_${i}`,
       name: `Restaurant ${i}`,
-      description: `A wonderful restaurant serving delicious food. This is restaurant number ${i}.`,
-      cuisine: ['Local', 'International', 'Mediterranean'][Math.floor(Math.random() * 3)],
-      priceRange: ['$', '$$', '$$$'][Math.floor(Math.random() * 3)],
-      rating: (Math.random() * 2 + 3).toFixed(1),
+      description: `A wonderful restaurant serving delicious ${cuisine} cuisine.`,
+      cuisine: cuisine,
+      priceRange: priceRange,
+      rating: parseFloat(rating),
+      image: `https://picsum.photos/seed/restaurant_${i}/600/400`,
       location: {
         latitude: 36.7538 + (Math.random() * 0.1 - 0.05),
         longitude: 5.0569 + (Math.random() * 0.1 - 0.05),
+        address: `Street ${i}, Algiers`
       },
       images: [
-        'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4',
-        'https://images.unsplash.com/photo-1552566626-52f5410b1b3d',
-        'https://images.unsplash.com/photo-1559339352-11d035aa65de',
+        `https://picsum.photos/seed/restaurant_${i}_1/600/400`,
+        `https://picsum.photos/seed/restaurant_${i}_2/600/400`,
+        `https://picsum.photos/seed/restaurant_${i}_3/600/400`
       ],
+      menu: [
+        { name: 'Starter', price: `$${Math.floor(Math.random() * 10 + 5)}` },
+        { name: 'Main Course', price: `$${Math.floor(Math.random() * 20 + 10)}` },
+        { name: 'Dessert', price: `$${Math.floor(Math.random() * 8 + 5)}` }
+      ],
+      reviews: [
+        { user: 'User1', rating: 4.0, comment: 'Delicious food!' },
+        { user: 'User2', rating: 4.5, comment: 'Great atmosphere!' }
+      ]
     });
   }
   return restaurants;

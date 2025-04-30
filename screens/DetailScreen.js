@@ -10,6 +10,7 @@ import {
     getTopRatedRestaurants,  // If you need to fetch Restaurant details
     getAttractionDetails,    // Already used in AttractionDetailScreen, but included for completeness
     getHotelDetails,         // Already used in HotelDetailScreen, but included for completeness
+    getRestaurantDetails,    // Added for the new restaurant case
 } from '../services/dataService'; // <--- Import all detail fetch functions needed here
 
 
@@ -189,12 +190,12 @@ function DetailScreen() {
                        // data = await getDestinationDetails(itemId); // <--- Need to implement this
                       break;
                   case 'restaurant':
-                       // Similar note as destinations. getTopRatedRestaurants fetches list data.
-                       // Need getRestaurantDetails if details are different or not passed.
-                       // data = passedItem || await getRestaurantDetails(itemId); // If getRestaurantDetails exists
-                        data = await getTopRatedRestaurants(); // Fetch list
-                        data = data.find(item => item.id === itemId) || passedItem; // Find item or use passed one
-                        // data = await getRestaurantDetails(itemId); // <--- Need to implement this
+                       // Use getRestaurantDetails to fetch individual restaurant details
+                       data = await getRestaurantDetails(itemId);
+                       if (!data) {
+                           // Fallback to passed item if details not found
+                           data = passedItem;
+                       }
                       break;
                   case 'attraction':
                        // If using this generic screen for attractions, use the specific fetch

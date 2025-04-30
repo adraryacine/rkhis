@@ -391,13 +391,29 @@ function FavoritesScreen() {
         const itemId = item.id || item.name;
 
         let navigateToScreen = null;
-        let params = { id: itemId, item: item, type: itemType };
+        let params = {};
 
         switch (itemType) {
-            case 'destination': navigateToScreen = 'DestinationDetail'; params.destinationId = itemId; break;
-            case 'hotel': navigateToScreen = 'HotelDetail'; params.hotelId = itemId; break;
-            case 'restaurant': navigateToScreen = 'RestaurantDetail'; params.restaurantId = itemId; break;
-            case 'attraction': navigateToScreen = 'AttractionDetail'; params.attractionId = itemId; break;
+            case 'destination': 
+                navigateToScreen = 'DestinationDetail'; 
+                params = { id: itemId, item: item, type: itemType, destinationId: itemId }; 
+                break;
+            case 'hotel': 
+                navigateToScreen = 'HotelDetail'; 
+                params = { id: itemId, item: item, type: itemType, hotelId: itemId }; 
+                break;
+            case 'restaurant': 
+                navigateToScreen = 'RestaurantDetail'; 
+                params = { 
+                    itemId: itemId,
+                    item: item,
+                    itemType: 'restaurant'
+                }; 
+                break;
+            case 'attraction': 
+                navigateToScreen = 'AttractionDetail'; 
+                params = { id: itemId, item: item, type: itemType, attractionId: itemId }; 
+                break;
             default:
                 navigateToScreen = null;
                 Alert.alert("Details Unavailable", `Could not find a specific detail screen for this ${itemType}.`);

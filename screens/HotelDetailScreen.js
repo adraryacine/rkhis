@@ -27,7 +27,7 @@ const { Ionicons } = require('@expo/vector-icons');
 const { useNavigation, useRoute } = require('@react-navigation/native');
 const { LinearGradient } = require('expo-linear-gradient');
 const { useSavedItems } = require('../contexts/SavedItemsContext');
-const { getHotelById } = require('../services/dataService');
+const { getHotelDetails } = require('../services/dataService');
 const { addDoc, collection, serverTimestamp } = require('firebase/firestore');
 const { db } = require('../firebase');
 const { useLanguage } = require('../contexts/LanguageContext');
@@ -273,142 +273,107 @@ function HotelDetailScreen() {
     extrapolate: 'clamp',
   });
 
-  // Get parameters from the route
-  // Use a fallback object {} to prevent errors if params are null/undefined
-  // Look for 'hotelId', 'item', and 'type'
-  const {
-      hotelId: routeHotelId, // Parameter named 'hotelId'
-      item: initialItem, // Parameter named 'item' (from HomeScreen/FavoritesScreen)
-      hotel: initialHotel, // Parameter named 'hotel' (from HotelReservationScreen)
-      type = 'hotel' // Default type if not provided
-  } = route.params || {}; // Use a fallback object {}
+  // Get parameters from the route with better error handling
+  const params = route.params || {};
+  const routeHotelId = params.hotelId;
+  const initialItem = params.item || null;
+  const initialHotel = params.hotel || null;
+  const type = params.type || 'hotel';
 
-   // Determine the ID to use for fetching. Prioritize routeHotelId, then item.id, then hotel.id
-   // Ensure the ID is treated as a string for consistency with Firestore document IDs
-   // Handle potential null/undefined IDs gracefully
-  const currentHotelId = String(routeHotelId || initialItem?.id || initialHotel?.id || ''); // Default to empty string if no ID found
+  // Determine the ID to use for fetching with better validation
+  const currentHotelId = React.useMemo(() => {
+    if (routeHotelId) return String(routeHotelId);
+    if (initialItem?.id) return String(initialItem.id);
+    if (initialHotel?.id) return String(initialHotel.id);
+    return null;
+  }, [routeHotelId, initialItem, initialHotel]);
 
-
-  // State to hold the fetched hotel details. Use passed data for initial state if available.
+  // State to hold the fetched hotel details
   const [hotelDetails, setHotelDetails] = React.useState(initialItem || initialHotel || null);
-  // State for loading status. True if we have a valid ID but no initial data.
-  // Check if currentHotelId is a non-empty string AND we don't have initial data.
   const [isLoading, setIsLoading] = React.useState(!!currentHotelId && !hotelDetails);
-  // State for error message
   const [error, setError] = React.useState(null);
 
-  // Use Saved Items Context for save status and toggling
-  const { savedItems, toggleSaveItem, isItemSaved } = useSavedItems(); // <-- USE CONTEXT HOOK
+  // Use Saved Items Context
+  const { savedItems, toggleSaveItem, isItemSaved } = useSavedItems();
 
-  // State to track if the current hotel is saved (based on context)
-  // Initialize based on the *initial* item data we might have
-  const [isSaved, setIsSaved] = React.useState(isItemSaved(initialItem || initialHotel, type));
+  // Initialize isSaved state safely
+  const [isSaved, setIsSaved] = React.useState(false);
 
-  // --- Effect to Load Full Hotel Details ---
-  // This effect runs when the component mounts or when currentHotelId changes.
-  // Added hotelDetails to dependencies to avoid stale data when checking shouldFetch
+  // Effect to Load Full Hotel Details
   React.useEffect(() => {
-      const fetchDetails = async (id) => {
-          // Also check if id is a non-empty string
-          if (!id || typeof id !== 'string') {
-              console.error("HotelDetailScreen: No valid Hotel ID provided for fetching.");
-              setError("Hotel ID is missing or invalid."); // User-friendly error
-              setIsLoading(false);
-              setHotelDetails(null); // Clear any partial data
-              return;
-          }
-
-          console.log(`Fetching hotel details for ID: ${id}...`);
-          setIsLoading(true); // Start loading
-          setError(null); // Clear previous errors
-
-          try {
-              // Fetch the full details from your data service using the ID
-              const hotelData = await getHotelById(id); // Renamed from data to hotelData
-
-              if (hotelData) {
-                  console.log(`Successfully fetched details for hotel ID: ${id}`);
-                  setHotelDetails(hotelData); // Update state with the full fetched data
-                  // Update the screen title once data is loaded
-                  navigation.setOptions({ title: hotelData.name || 'Hotel Details' });
-                  setError(null);
-              } else {
-                   // If dataService returns null (meaning not found even in mock/fallback)
-                  console.warn(`Hotel with ID ${id} not found in data service.`);
-                  setError(`Hotel details not found.`); // User-friendly error message
-                  setHotelDetails(null); // Clear details
-              }
-          } catch (err) {
-              console.error(`Error fetching hotel details for ID ${id}:`, err);
-              setError("Failed to load hotel details."); // User-friendly error message on fetch error
-              setHotelDetails(null); // Clear details on error
-          } finally {
-              setIsLoading(false); // End loading regardless of success or failure
-          }
-      };
-
-      // Decide whether to fetch:
-      // We should fetch if we have a valid ID AND
-      //   (1) We didn't get an initial data object (item or hotel) OR
-      //   (2) The data we currently have in state is null OR
-      //   (3) The ID in the data state is different from the ID we should be showing
-      const hasInitialData = initialItem || initialHotel; // Check if *any* initial data object was passed
-      const shouldFetch = currentHotelId && typeof currentHotelId === 'string' &&
-                          (!hasInitialData || hotelDetails === null || hotelDetails.id !== currentHotelId);
-
-
-      if (shouldFetch) {
-           fetchDetails(currentHotelId);
-      } else if (!currentHotelId || typeof currentHotelId !== 'string') {
-          // Handle case where *no* valid ID is available at all
-           console.error("HotelDetailScreen: No valid Hotel ID available in params.");
-           setError("Cannot display details: Hotel ID is missing or invalid in navigation parameters.");
-           setIsLoading(false);
-           setHotelDetails(null);
-      } else {
-          // If we are here, it means we have a valid ID and the current `hotelDetails` state
-          // either matches this ID (from initial params) or it's the first render with initial data.
-          // So, we don't need to fetch immediately.
-          console.log(`Using existing data (from params) for hotel ID: ${currentHotelId}`);
-          setIsLoading(false); // Not loading if using initial data
-          setError(null); // Clear any old error state
-           // Set screen title based on the item data we have
-          const itemToTitle = hotelDetails || initialItem || initialHotel;
-          if (itemToTitle?.name) {
-               navigation.setOptions({ title: itemToTitle.name });
-          } else {
-               navigation.setOptions({ title: 'Hotel Details' });
-          }
+    const fetchDetails = async (id) => {
+      if (!id) {
+        console.error("HotelDetailScreen: No valid Hotel ID provided for fetching.");
+        setError("Hotel ID is missing or invalid.");
+        setIsLoading(false);
+        setHotelDetails(null);
+        return;
       }
 
-      // Cleanup function for the effect
-      // This can be useful if you had subscriptions or event listeners initiated here
-      return () => {
-         // Any cleanup needed when dependencies change or component unmounts
-         // console.log(`Cleaning up effect for hotel ID: ${currentHotelId}`);
-      };
+      console.log(`Fetching hotel details for ID: ${id}...`);
+      setIsLoading(true);
+      setError(null);
 
-      // Added getHotelDetails to dependencies as it's called inside the effect
-      // Added navigation because setOptions is called
-      // Added item/hotel params and hotelDetails state as they influence fetch logic
-  }, [currentHotelId, initialItem, initialHotel, navigation, hotelDetails, getHotelById]);
+      try {
+        const hotelData = await getHotelDetails(id);
 
-
-  // --- Effect to Update Saved Status ---
-  // This effect runs when the displayed item data changes OR when the context's saved items list changes.
-  React.useEffect(() => {
-      // Get the item we are currently displaying (either fetched or initial)
-      const itemForSavedCheck = hotelDetails || initialItem || initialHotel;
-      if (itemForSavedCheck) {
-          // Check if the current item is saved using the context's helper
-          setIsSaved(isItemSaved(itemForSavedCheck, type));
-      } else {
-           // If no item data is available, it can't be saved
-           setIsSaved(false);
+        if (hotelData) {
+          console.log(`Successfully fetched details for hotel ID: ${id}`);
+          setHotelDetails(hotelData);
+          navigation.setOptions({ title: hotelData.name || 'Hotel Details' });
+          setError(null);
+        } else {
+          console.warn(`Hotel with ID ${id} not found in data service.`);
+          setError(`Hotel details not found.`);
+          setHotelDetails(null);
+        }
+      } catch (err) {
+        console.error(`Error fetching hotel details for ID ${id}:`, err);
+        setError("Failed to load hotel details.");
+        setHotelDetails(null);
+      } finally {
+        setIsLoading(false);
       }
-      // This effect should re-run whenever the item data changes or the context's savedItems list changes
+    };
+
+    const shouldFetch = currentHotelId && (!hotelDetails || hotelDetails.id !== currentHotelId);
+
+    if (shouldFetch) {
+      fetchDetails(currentHotelId);
+    } else if (!currentHotelId) {
+      console.error("HotelDetailScreen: No valid Hotel ID available in params.");
+      setError("Cannot display details: Hotel ID is missing or invalid in navigation parameters.");
+      setIsLoading(false);
+      setHotelDetails(null);
+    } else {
+      console.log(`Using existing data for hotel ID: ${currentHotelId}`);
+      setIsLoading(false);
+      setError(null);
+      const itemToTitle = hotelDetails || initialItem || initialHotel;
+      if (itemToTitle?.name) {
+        navigation.setOptions({ title: itemToTitle.name });
+      } else {
+        navigation.setOptions({ title: 'Hotel Details' });
+      }
+    }
+  }, [currentHotelId, hotelDetails, initialItem, initialHotel, navigation]);
+
+  // Effect to Update Saved Status with better validation
+  React.useEffect(() => {
+    const itemForSavedCheck = hotelDetails || initialItem || initialHotel;
+    
+    // Only check saved status if we have a valid item with an ID
+    if (itemForSavedCheck && itemForSavedCheck.id) {
+      try {
+        setIsSaved(isItemSaved(itemForSavedCheck, type));
+      } catch (err) {
+        console.error("Error checking saved status:", err);
+        setIsSaved(false);
+      }
+    } else {
+      setIsSaved(false);
+    }
   }, [savedItems, hotelDetails, initialItem, initialHotel, type, isItemSaved]);
-
 
   // --- Handle Save Button Press ---
   // This function uses the item data that is currently displayed (either fetched or initial).
@@ -428,7 +393,6 @@ function HotelDetailScreen() {
           console.error("Attempted to save item with no ID/Name:", itemToSave);
       }
   }, [hotelDetails, initialItem, initialHotel, type, toggleSaveItem]);
-
 
   // --- Placeholder Functions (DEFINED INSIDE THE COMPONENT) ---
   // Moved these definitions inside the component scope
