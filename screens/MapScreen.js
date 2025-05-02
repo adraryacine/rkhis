@@ -14,7 +14,8 @@ import {
   SafeAreaView,
   ScrollView,
   Linking,
-  useColorScheme
+  useColorScheme,
+  Modal,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,12 +34,26 @@ const Colors = {
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const safeScreenHeight = screenHeight === 0 ? 1 : screenHeight;
 const ASPECT_RATIO = screenWidth / safeScreenHeight;
-const LATITUDE_DELTA = 0.0422; // *** USE THIS DEFINED CONSTANT ***
+const LATITUDE_DELTA = 0.0422;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 const INITIAL_LATITUDE = 36.7559;
 const INITIAL_LONGITUDE = 5.0842;
 const SPACING = 15;
 const CARD_SHADOW = { shadowColor: Colors.light.black, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.15, shadowRadius: 5, elevation: 4 };
+
+// --- Platform-specific Constants ---
+const IS_IOS = Platform.OS === 'ios';
+const MARKER_SIZE = IS_IOS ? SPACING * 2.2 : SPACING * 3.5;
+const CALLOUT_WIDTH = IS_IOS ? 250 : 280;
+
+// --- Filter Categories ---
+const CATEGORIES = [
+  { id: 'all', label: 'All', icon: 'apps' },
+  { id: 'attraction', label: 'Attractions', icon: 'star' },
+  { id: 'hotel', label: 'Hotels', icon: 'bed' },
+  { id: 'restaurant', label: 'Restaurants', icon: 'restaurant' },
+  { id: 'beach', label: 'Beaches', icon: 'water' },
+];
 
 // --- Hardcoded Fallback Region (if dynamic calculation fails) ---
 const FALLBACK_REGION = {
@@ -69,11 +84,9 @@ const mapMockData = [
 
 
 // --- Themed Styles Function ---
-// (getThemedMapStyles remains the same)
 const getThemedMapStyles = (isDarkMode = false) => {
   const colors = isDarkMode ? Colors.dark : Colors.light;
   const dynamicCardShadow = { ...CARD_SHADOW, shadowColor: colors.black };
-  const iconContainerSize = SPACING * 2.2;
 
   return StyleSheet.create({
     container: { flex: 1, backgroundColor: colors.background },
@@ -98,22 +111,137 @@ const getThemedMapStyles = (isDarkMode = false) => {
     mapTypeButtonText: { color: colors.secondary, fontSize: 12, fontWeight: '600' },
     mapTypeButtonTextActive: { color: Colors.white },
 
-    // Custom Marker Style (iOS only)
-    markerIconContainer: { width: iconContainerSize, height: iconContainerSize, borderRadius: iconContainerSize / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.tint, borderWidth: 1.5, borderColor: Colors.white, overflow: 'hidden', ...dynamicCardShadow },
-    markerIconContainerAttraction: { backgroundColor: Colors.light.danger },
-    markerIconContainerHotel: { backgroundColor: Colors.light.primaryBlue },
-    markerIconContainerBeach: { backgroundColor: Colors.light.tint },
-    markerIconContainerRestaurant: { backgroundColor: Colors.light.success },
+    // Marker Styles (Platform-specific)
+    markerContainer: Platform.select({
+      ios: {
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
+        borderRadius: MARKER_SIZE / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.tint,
+        borderWidth: 1.5,
+        borderColor: Colors.white,
+        ...dynamicCardShadow,
+      },
+      android: {
+        width: MARKER_SIZE,
+        height: MARKER_SIZE,
+        borderRadius: MARKER_SIZE / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: colors.tint,
+        borderWidth: 4,
+        borderColor: Colors.white,
+        elevation: 8,
+      },
+    }),
+    markerContainerAttraction: { backgroundColor: '#FF4444' },
+    markerContainerHotel: { backgroundColor: '#2196F3' },
+    markerContainerBeach: { backgroundColor: '#00BCD4' },
+    markerContainerRestaurant: { backgroundColor: '#4CAF50' },
 
-    // Callout Styles (Improved Layout)
-    calloutView: { padding: SPACING, minWidth: 200, maxWidth: 260, backgroundColor: colors.cardBackground, borderRadius: SPACING * 0.8, borderColor: colors.border, borderWidth: 1, ...dynamicCardShadow },
-    calloutHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: SPACING * 0.6 },
-    calloutIcon: { marginRight: SPACING * 0.8, color: colors.secondary },
-    calloutTitle: { flex: 1, fontSize: 16, fontWeight: 'bold', color: colors.text },
-    calloutDescription: { fontSize: 13, color: colors.secondary, marginBottom: SPACING * 0.6, marginLeft: SPACING * 0.8 + 18 },
-    calloutType: { fontSize: 12, color: colors.secondary, fontStyle: 'italic', textTransform: 'capitalize', marginBottom: SPACING * 0.8, marginLeft: SPACING * 0.8 + 18 },
-    calloutActions: { paddingTop: SPACING * 0.4, marginLeft: SPACING * 0.8 + 18 },
-    calloutLink: { fontSize: 14, color: colors.tint, fontWeight: '600', paddingVertical: SPACING * 0.3 },
+    // Filter Styles
+    filterContainer: {
+      position: 'absolute',
+      top: SPACING * 6,
+      left: SPACING,
+      right: SPACING,
+      zIndex: 10,
+    },
+    filterScroll: {
+      flexDirection: 'row',
+      paddingHorizontal: SPACING * 0.5,
+    },
+    filterButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBackground,
+      paddingHorizontal: SPACING,
+      paddingVertical: SPACING * 0.6,
+      borderRadius: SPACING,
+      marginHorizontal: SPACING * 0.4,
+      ...dynamicCardShadow,
+    },
+    filterButtonActive: {
+      backgroundColor: colors.tint,
+    },
+    filterButtonText: {
+      color: colors.text,
+      marginLeft: SPACING * 0.5,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    filterButtonTextActive: {
+      color: Colors.white,
+    },
+
+    // Callout Styles (Platform-specific)
+    calloutContainer: {
+      width: CALLOUT_WIDTH,
+      backgroundColor: colors.cardBackground,
+      borderRadius: SPACING,
+      padding: 0,
+      ...dynamicCardShadow,
+      ...(IS_IOS ? {} : {
+        elevation: 4,
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 3.84,
+      }),
+    },
+    calloutImage: {
+      width: '100%',
+      height: IS_IOS ? 120 : 140,
+      borderTopLeftRadius: SPACING,
+      borderTopRightRadius: SPACING,
+    },
+    calloutContent: {
+      padding: SPACING,
+    },
+    calloutTitle: {
+      fontSize: IS_IOS ? 16 : 18,
+      fontWeight: 'bold',
+      color: colors.text,
+      marginBottom: SPACING * 0.3,
+    },
+    calloutDescription: {
+      fontSize: IS_IOS ? 14 : 16,
+      color: colors.secondary,
+      marginBottom: SPACING * 0.5,
+    },
+    calloutFooter: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: SPACING * 0.5,
+    },
+    calloutType: {
+      fontSize: IS_IOS ? 12 : 14,
+      color: colors.tint,
+      textTransform: 'capitalize',
+    },
+    calloutButton: {
+      backgroundColor: colors.tint,
+      paddingHorizontal: SPACING,
+      paddingVertical: SPACING * 0.5,
+      borderRadius: SPACING * 0.5,
+      minWidth: IS_IOS ? 80 : 100,
+      ...(IS_IOS ? {} : {
+        elevation: 2,
+        shadowColor: colors.black,
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+      }),
+    },
+    calloutButtonText: {
+      color: Colors.white,
+      fontSize: IS_IOS ? 12 : 14,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
   });
 };
 
@@ -136,6 +264,8 @@ function MapScreen() {
   const [mapType, setMapType] = useState('standard');
   const [mapSearchTerm, setMapSearchTerm] = useState('');
   const [currentRegion, setCurrentRegion] = useState(null); // Initialize as null
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filteredMarkers, setFilteredMarkers] = useState([]);
 
   // --- Dynamic Region Calculation ---
   useEffect(() => {
@@ -236,30 +366,84 @@ function MapScreen() {
 
   // --- Marker Styling Logic ---
   const getMarkerIcon = (type = 'default') => { switch (type.toLowerCase()) { case 'attraction': return 'star'; case 'hotel': return 'bed'; case 'restaurant': return 'restaurant'; case 'beach': return 'water'; case 'landmark': return 'flag'; case 'history': return 'archive'; case 'park': return 'leaf'; default: return 'location'; } };
-  const getMarkerStyle = (type = 'default') => { switch (type.toLowerCase()) { case 'attraction': return styles.markerIconContainerAttraction; case 'hotel': return styles.markerIconContainerHotel; case 'beach': return styles.markerIconContainerBeach; case 'restaurant': return styles.markerIconContainerRestaurant; default: return styles.markerIconContainer; } };
-  const getPinColor = (type = 'default') => { switch (type.toLowerCase()) { case 'attraction': return Colors.light.danger; case 'hotel': return Colors.light.primaryBlue; case 'restaurant': return Colors.light.success; case 'beach': return Colors.light.tint; default: return Colors.light.secondary; } };
+  const getMarkerStyle = (type = 'default') => { switch (type.toLowerCase()) { case 'attraction': return styles.markerContainerAttraction; case 'hotel': return styles.markerContainerHotel; case 'beach': return styles.markerContainerBeach; case 'restaurant': return styles.markerContainerRestaurant; default: return styles.markerContainer; } };
+  const getPinColor = (type = 'default') => {
+    switch (type.toLowerCase()) {
+      case 'attraction':
+        return '#FF0000'; // Red
+      case 'hotel':
+        return '#0000FF'; // Blue
+      case 'restaurant':
+        return '#00FF00'; // Green
+      case 'beach':
+        return '#00BCD4'; // Cyan
+      default:
+        return '#FF0000'; // Default red
+    }
+  };
 
 
   // --- Filtering Logic ---
-  const filteredMarkers = useMemo(() => {
-      if (!mapSearchTerm) { return allMarkersData; }
-      const lowerCaseTerm = mapSearchTerm.toLowerCase();
-      return allMarkersData.filter(marker =>
-          marker.name?.toLowerCase().includes(lowerCaseTerm) ||
-          marker.description?.toLowerCase().includes(lowerCaseTerm) ||
-          marker.type?.toLowerCase().includes(lowerCaseTerm) ||
-          marker.tags?.some(tag => tag.toLowerCase().includes(lowerCaseTerm))
+  useEffect(() => {
+    let filtered = allMarkersData;
+    
+    // Apply category filter
+    if (selectedCategory !== 'all') {
+      filtered = filtered.filter(marker => marker.type === selectedCategory);
+    }
+    
+    // Apply search filter
+    if (mapSearchTerm) {
+      const searchLower = mapSearchTerm.toLowerCase();
+      filtered = filtered.filter(marker =>
+        marker.name.toLowerCase().includes(searchLower) ||
+        marker.description.toLowerCase().includes(searchLower) ||
+        marker.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
-  }, [allMarkersData, mapSearchTerm]);
-
-  // Callback for when the map is actually ready
-  const onMapReadyHandler = useCallback(() => { // Renamed to avoid conflict
-      console.log("Map is ready.");
-      setIsMapReady(true);
-  }, []);
+    }
+    
+    setFilteredMarkers(filtered);
+  }, [allMarkersData, selectedCategory, mapSearchTerm]);
 
   // --- Render Logic ---
   const showLoadingIndicator = (isLoading && allMarkersData.length === 0) || !isMapReady || !currentRegion;
+
+  // Custom Callout Component
+  const CustomCallout = ({ item }) => (
+    <View style={styles.calloutContainer}>
+      {item.image && (
+        <Image
+          source={{ uri: item.image }}
+          style={styles.calloutImage}
+          resizeMode="cover"
+        />
+      )}
+      <View style={styles.calloutContent}>
+        <Text style={styles.calloutTitle}>{item.name}</Text>
+        <Text style={styles.calloutDescription}>{item.description}</Text>
+        <View style={styles.calloutFooter}>
+          <Text style={styles.calloutType}>{item.type}</Text>
+          <TouchableOpacity
+            style={styles.calloutButton}
+            onPress={() => handleCalloutPress(item)}
+          >
+            <Text style={styles.calloutButtonText}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  // Custom Marker Component
+  const CustomMarker = ({ marker }) => (
+    <View style={[styles.markerContainer, getMarkerStyle(marker.type)]}>
+      <Ionicons 
+        name={getMarkerIcon(marker.type)} 
+        size={Platform.OS === 'ios' ? 16 : 24}
+        color={Colors.white} 
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -267,10 +451,44 @@ function MapScreen() {
         {/* Search Bar */}
         <View style={styles.searchBarContainer}>
             <View style={styles.searchBarInner}>
-                <Ionicons name="search-outline" size={20} style={styles.searchIcon} />
+                <Ionicons name="search" size={20} style={styles.searchIcon} />
                 <TextInput ref={searchInputRef} style={styles.searchTextInput} placeholder={`Search Bejaia map...`} placeholderTextColor={styles.searchTextInput.color} value={mapSearchTerm} onChangeText={setMapSearchTerm} returnKeyType="search" />
                  {mapSearchTerm.length > 0 && ( <Animated.View entering={FadeIn} exiting={FadeOut}><TouchableOpacity onPress={() => setMapSearchTerm('')} style={styles.clearSearchButton}><Ionicons name="close-circle" size={20} color={styles.searchIcon.color} /></TouchableOpacity></Animated.View> )}
             </View>
+        </View>
+
+        {/* Category Filter */}
+        <View style={styles.filterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.filterScroll}
+          >
+            {CATEGORIES.map(category => (
+              <TouchableOpacity
+                key={category.id}
+                style={[
+                  styles.filterButton,
+                  selectedCategory === category.id && styles.filterButtonActive,
+                ]}
+                onPress={() => setSelectedCategory(category.id)}
+              >
+                <Ionicons
+                  name={category.icon}
+                  size={16}
+                  color={selectedCategory === category.id ? Colors.white : (isDarkMode ? Colors.dark.text : Colors.light.text)}
+                />
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    selectedCategory === category.id && styles.filterButtonTextActive,
+                  ]}
+                >
+                  {category.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Map View - Render only when currentRegion is calculated */}
@@ -278,48 +496,28 @@ function MapScreen() {
             <MapView
                 ref={mapRef}
                 style={styles.map}
-                mapType={mapType}
-                initialRegion={currentRegion} // Use calculated or fallback region
+                initialRegion={currentRegion}
                 showsUserLocation={locationPermissionGranted}
                 showsMyLocationButton={false}
-                showsPointsOfInterest={false}
                 showsCompass={true}
-                onMapReady={onMapReadyHandler} // Use the handler
+                mapType={mapType}
+                onMapReady={() => {
+                  setIsMapReady(true);
+                  console.log('Map is ready, rendering', filteredMarkers.length, 'markers');
+                }}
             >
-                {/* Render filtered markers directly */}
                 {filteredMarkers.map((marker) => (
                 <Marker
                     key={marker.id}
-                    coordinate={{ latitude: marker.latitude, longitude: marker.longitude }}
-                    pinColor={Platform.OS === 'android' ? getPinColor(marker.type) : undefined}
-                    tracksViewChanges={false} // Keep false for performance
-                >
-                    {/* --- Custom Marker Icon for iOS --- */}
-                    {Platform.OS === 'ios' && (
-                        <View style={[styles.markerIconContainer, getMarkerStyle(marker.type)]}>
-                            <Ionicons name={getMarkerIcon(marker.type)} size={18} color={Colors.white} />
-                        </View>
-                    )}
-                    {/* --- Custom Callout (Common to both platforms) --- */}
-                    <Callout tooltip={false} /* onPress removed */ >
-                        <View style={styles.calloutView}>
-                            <View style={styles.calloutHeader}>
-                                <Ionicons name={getMarkerIcon(marker.type)} size={18} style={styles.calloutIcon} />
-                                <Text style={styles.calloutTitle}>{marker.name}</Text>
-                            </View>
-                            {marker.description && <Text style={styles.calloutDescription} numberOfLines={2}>{marker.description}</Text>}
-                            <Text style={styles.calloutType}>{marker.type}</Text>
-                            <View style={styles.calloutActions}>
-                                <TouchableOpacity onPress={() => handleCalloutPress(marker)}>
-                                    <Text style={styles.calloutLink}>View Details</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => getDirections(marker)} style={{marginTop: SPACING * 0.5}}>
-                                    <Text style={styles.calloutLink}>Get Directions</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    </Callout>
-                </Marker>
+                    coordinate={{
+                        latitude: marker.latitude,
+                        longitude: marker.longitude,
+                    }}
+                    pinColor={getPinColor(marker.type)}
+                    title={marker.name}
+                    description={marker.description}
+                    onCalloutPress={() => handleCalloutPress(marker)}
+                />
                 ))}
             </MapView>
         ) : (

@@ -504,8 +504,16 @@ function HotelDetailScreen() {
             </View>
             <View style={styles.ratingContainer}>
               <Ionicons name="star" size={20} color={colors.primaryOrange} />
-              <Text style={styles.rating}>{hotelDetails?.rating ? `${hotelDetails?.rating} Stars` : 'Rating N/A'}</Text>
-              <Text style={styles.reviewCount}>({hotelDetails?.reviews} reviews)</Text>
+              <Text style={styles.rating}>
+                {typeof hotelDetails?.rating === 'object' 
+                  ? `${hotelDetails.rating.average || 'N/A'} Stars` 
+                  : `${hotelDetails?.rating || 'N/A'} Stars`}
+              </Text>
+              <Text style={styles.reviewCount}>
+                ({typeof hotelDetails?.reviews === 'object' 
+                  ? hotelDetails.reviews.length || 0 
+                  : hotelDetails?.reviews || 0} reviews)
+              </Text>
             </View>
             <TouchableOpacity
               style={styles.locationContainer}

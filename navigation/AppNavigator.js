@@ -37,6 +37,7 @@ import ChangePasswordScreen from '../screens/ChangePasswordScreen'; // Assuming 
 // REMOVED: import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 // REMOVED: import AppearanceSettingsScreen from '../screens/AppearanceSettingsScreen';
 import AboutUsScreen from '../screens/AboutUsScreen'; // Added explicitly
+import HotelScreen from '../screens/HotelScreen'; // Add this import at the top with other imports
 
 // NEW: Import Activity Screens
 import HikingScreen from '../screens/HikingScreen';
@@ -53,6 +54,7 @@ import HotelDetailScreen from '../screens/HotelDetailScreen';
 import AttractionDetailScreen from '../screens/AttractionDetailScreen';
 // You might have one generic DetailScreen or specific ones
 import DetailScreen from '../screens/DetailScreen'; // Assuming a generic one for others
+import DestinationDetailScreen from '../screens/DestinationDetailScreen';
 
 
 // Define Navigators
@@ -143,7 +145,7 @@ function MainStack() {
         />
          <Stack.Screen
             name="Hotels" // List of hotels
-            component={HotelReservationScreen}
+            component={HotelScreen} // Changed from HotelReservationScreen to HotelScreen
             options={{ headerShown: true, title: 'Hotels' }}
         />
         <Stack.Screen
@@ -159,7 +161,19 @@ function MainStack() {
 
         {/* Detail screens (Ensure these component names and imports are correct) */}
         {/* Use your specific detail screens if you have them, or the generic one */}
-        <Stack.Screen name="DestinationDetail" component={DetailScreen} options={{ headerShown: true, title: 'Destination Details' }} />
+        <Stack.Screen 
+          name="DestinationDetail" 
+          component={DestinationDetailScreen} 
+          options={{ 
+            headerShown: true, 
+            title: 'Destination Details',
+            headerTransparent: true,
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              color: 'transparent'
+            }
+          }} 
+        />
         <Stack.Screen name="RestaurantDetail" component={DetailScreen} options={{ headerShown: true, title: 'Restaurant Details' }} />
         <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
 

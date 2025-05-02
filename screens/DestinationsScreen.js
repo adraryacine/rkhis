@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   Pressable,
   Alert,
-  Image // Import Image for fallback
+  Image,
+  RefreshControl
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,20 +23,19 @@ import Animated, {
   FadeInUp,
   useSharedValue,
   useAnimatedStyle,
-  withSpring
+  withSpring,
+  withTiming,
+  withSequence,
+  withDelay
 } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+import { useSavedItems } from '../contexts/SavedItemsContext';
+import { getFeaturedDestinations } from '../services/destinationService';
 
-// Import ONLY the useSavedItems hook and your ACTUAL data fetching function
-import { useSavedItems } from '../contexts/SavedItemsContext'; // Ensure this path is correct
-import { getFeaturedDestinations } from '../services/dataService'; // <--- Import the specific fetch function
-
-
-// --- LOCAL Re-definition of ALL Constants and Styles needed for THIS screen ---
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 const SPACING = 16;
-// Include any other constants specific to THIS screen's layout or appearance
-// const SOME_OTHER_CONSTANT = 10;
+const CARD_HEIGHT = 220;
 
 const Colors = {
   light: {
@@ -65,23 +65,8 @@ const Colors = {
   white: '#ffffff',
 };
 
-const CARD_SHADOW = {
-  shadowColor: Colors.light.black,
-  shadowOffset: { width: 0, height: 4 },
-  shadowOpacity: 0.15,
-  shadowRadius: 8,
-  elevation: 4,
-};
-
-const fallbackPlaceholderImage = 'https://via.placeholder.com/300x200/cccccc/969696?text=Image+Error';
-
-// --- LOCAL Definition of getThemedStyles including ALL styles for THIS screen ---
 const getThemedStyles = (isDarkMode = false) => {
   const colors = isDarkMode ? Colors.dark : Colors.light;
-  const dynamicCardShadow = {
-    ...CARD_SHADOW,
-    shadowColor: colors.black,
-  };
 
   return StyleSheet.create({
     screenContainer: {
@@ -89,122 +74,167 @@ const getThemedStyles = (isDarkMode = false) => {
       backgroundColor: colors.background,
     },
     listContainer: {
-        padding: SPACING,
-        paddingTop: SPACING * 2,
-        paddingBottom: SPACING,
+      padding: SPACING,
+      paddingTop: SPACING * 2,
     },
     listItemContainer: {
-         marginBottom: SPACING,
+      marginBottom: SPACING * 1.5,
+      borderRadius: 16,
+      overflow: 'hidden',
+      backgroundColor: colors.cardBackground,
+      elevation: 4,
+      shadowColor: colors.black,
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
     },
-    // Reusable Card Base style needed by AnimatedCard (Define it here)
     cardBase: {
-        backgroundColor: colors.cardBackground,
-        borderRadius: SPACING * 1.5,
-        ...dynamicCardShadow,
-        overflow: 'hidden',
+      height: CARD_HEIGHT,
+      borderRadius: 16,
+      overflow: 'hidden',
     },
-    // Style for cards that span most of the width (for Destinations list)
-    fullWidthCard: {
-        width: '100%',
-        aspectRatio: 16 / 9, // Maintain aspect ratio
-        backgroundColor: colors.border, // Placeholder color
-         borderRadius: SPACING * 1.5, // Match base card border radius
-         overflow: 'hidden', // Clip content
-         ...dynamicCardShadow, // Apply shadow
-         backgroundColor: colors.cardBackground, // Use card background color
+    imageContainer: {
+      flex: 1,
+      backgroundColor: colors.border,
     },
-     listItemImage: {
-          flex: 1,
-          justifyContent: 'flex-end',
-          backgroundColor: colors.secondary,
-     },
-     listItemContent: {
-         padding: SPACING,
-     },
-     listItemTitle: {
-         fontSize: 18,
-         fontWeight: '700',
-         color: Colors.white,
-         textShadowColor: 'rgba(0, 0, 0, 0.5)',
-         textShadowOffset: { width: 1, height: 1 },
-         textShadowRadius: 3,
-     },
-      listItemDescription: {
-         fontSize: 14,
-         color: Colors.white,
-         opacity: 0.9,
-         marginTop: SPACING * 0.25,
-         textShadowColor: 'rgba(0, 0, 0, 0.5)',
-         textShadowOffset: { width: 1, height: 1 },
-         textShadowRadius: 3,
-     },
-    saveButtonList: { // Adjusted position for list view
-        position: 'absolute',
-        top: SPACING * 0.75,
-        right: SPACING * 0.75,
-        backgroundColor: 'rgba(0, 0, 0, 0.4)',
-        borderRadius: 18,
-        padding: SPACING * 0.3,
-        zIndex: 5,
+    listItemImage: {
+      width: '100%',
+      height: '100%',
     },
-    emptyListContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING * 2,
-         minHeight: Dimensions.get('window').height * 0.5,
+    gradientOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: CARD_HEIGHT,
+      justifyContent: 'flex-end',
+      padding: SPACING,
     },
-     emptyListText: {
-        marginTop: SPACING,
-        fontSize: 16,
-        color: colors.secondary,
-        textAlign: 'center',
-     },
-     secondaryText: {
-        color: colors.secondary,
-     },
-     loadingContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: SPACING * 2,
-         minHeight: Dimensions.get('window').height * 0.5,
-     },
-      loadingText: {
-         marginTop: SPACING,
-         fontSize: 16,
-         color: colors.tint,
-         fontWeight: '600',
-      },
+    contentContainer: {
+      marginTop: 'auto',
+    },
+    listItemTitle: {
+      fontSize: 24,
+      fontWeight: '700',
+      color: Colors.white,
+      marginBottom: 4,
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    listItemDescription: {
+      fontSize: 16,
+      color: Colors.white,
+      opacity: 0.9,
+      textShadowColor: 'rgba(0, 0, 0, 0.75)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    tagsContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginTop: 8,
+    },
+    tag: {
+      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+      marginRight: 8,
+      marginBottom: 4,
+    },
+    tagText: {
+      color: Colors.white,
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    saveButton: {
+      position: 'absolute',
+      top: SPACING,
+      right: SPACING,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      borderRadius: 24,
+      width: 48,
+      height: 48,
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1,
+    },
+    ratingContainer: {
+      position: 'absolute',
+      top: SPACING,
+      left: SPACING,
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    ratingText: {
+      color: Colors.white,
+      fontSize: 14,
+      fontWeight: '600',
+      marginLeft: 4,
+    },
+    emptyContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: SPACING * 2,
+    },
+    emptyText: {
+      fontSize: 18,
+      color: colors.secondary,
+      textAlign: 'center',
+      marginTop: SPACING,
+    },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: SPACING,
+      fontSize: 16,
+      color: colors.tint,
+      fontWeight: '600',
+    },
   });
 };
 
-// --- LOCAL Re-definition of AnimatedCard component ---
-const AnimatedCard = React.memo(({ children, style, onPress, accessibilityLabel, isDarkMode }) => {
+const AnimatedCard = React.memo(({ children, onPress, isDarkMode }) => {
   const scale = useSharedValue(1);
-  const styles = getThemedStyles(isDarkMode); // Call getThemedStyles inside the component
+  const opacity = useSharedValue(1);
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withSpring(scale.value, { damping: 15, stiffness: 150 }) }],
+    transform: [{ scale: scale.value }],
+    opacity: opacity.value,
   }));
 
+  const handlePressIn = () => {
+    scale.value = withSpring(0.95, { damping: 15, stiffness: 150 });
+    opacity.value = withTiming(0.9, { duration: 150 });
+  };
+
+  const handlePressOut = () => {
+    scale.value = withSpring(1, { damping: 15, stiffness: 150 });
+    opacity.value = withTiming(1, { duration: 150 });
+  };
+
   return (
-    <Animated.View style={[styles.cardBase, style]}> // Use local base card style
-        <Pressable
-            onPress={onPress}
-            onPressIn={() => (scale.value = 0.96)}
-            onPressOut={() => (scale.value = 1)}
-            accessibilityLabel={accessibilityLabel}
-            style={{ flex: 1 }}
-        >
-            <Animated.View style={[{flex: 1}, animatedStyle]}>
-                 {children}
-            </Animated.View>
-        </Pressable>
-    </Animated.View>
+    <Pressable
+      onPress={onPress}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      style={{ flex: 1 }}
+    >
+      <Animated.View style={[{ flex: 1 }, animatedStyle]}>
+        {children}
+      </Animated.View>
+    </Pressable>
   );
 });
-
 
 function DestinationsScreen() {
   const navigation = useNavigation();
@@ -213,71 +243,120 @@ function DestinationsScreen() {
   const styles = getThemedStyles(isDarkMode);
 
   const { isItemSaved, toggleSaveItem } = useSavedItems();
-
   const [destinationsData, setDestinationsData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState(null);
 
+  const loadData = async (showRefreshing = false) => {
+    if (showRefreshing) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+    setError(null);
 
-  // Fetch data when the component mounts using your REAL Firebase fetch function
+    try {
+      const data = await getFeaturedDestinations();
+      if (data && data.length > 0) {
+        setDestinationsData(data);
+      } else {
+        setError("No destinations available at the moment.");
+        setDestinationsData([]);
+      }
+    } catch (err) {
+      console.error("Error loading destinations:", err);
+      setError("Unable to load destinations. Please try again.");
+      setDestinationsData([]);
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
-      const loadData = async () => {
-          setIsLoading(true);
-          setError(null);
-          try {
-              const data = await getFeaturedDestinations(); // <--- CALL THE IMPORTED FETCH FUNCTION
-              setDestinationsData(data);
-          } catch (err) {
-              console.error("Error loading destinations:", err);
-              setError("Failed to load destinations. Please try again later.");
-              setDestinationsData([]);
-              // Alert.alert("Error", "Failed to load destinations data.");
-          } finally {
-              setIsLoading(false);
-          }
-      };
-      loadData();
+    loadData();
   }, []);
 
+  const handleRefresh = () => {
+    loadData(true);
+  };
 
   const renderDestinationItem = useCallback(({ item, index }) => (
-    <Animated.View entering={FadeInUp.delay(index * 50).duration(400)} style={styles.listItemContainer}>
+    <Animated.View 
+      entering={FadeInUp.delay(index * 100).springify()} 
+      style={styles.listItemContainer}
+    >
       <AnimatedCard
-        style={styles.fullWidthCard}
-        onPress={() => navigation.navigate('DestinationDetail', { destinationId: item.id, item: item, itemType: 'destination' })}
-        accessibilityLabel={`View details for ${item.name}`}
+        onPress={() => navigation.navigate('DestinationDetail', { 
+          destinationId: item.id, 
+          item: item,
+          itemType: 'destination' 
+        })}
         isDarkMode={isDarkMode}
       >
-        <ImageBackground
-          source={{ uri: item.image || fallbackPlaceholderImage }}
-          style={styles.listItemImage}
-          resizeMode="cover"
-        >
-           <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
-                style={StyleSheet.absoluteFill}
+        <View style={styles.cardBase}>
+          <View style={styles.imageContainer}>
+            <Image
+              source={{ uri: item.image }}
+              style={styles.listItemImage}
+              resizeMode="cover"
             />
-          <View style={styles.listItemContent}>
-            <Text style={styles.listItemTitle} numberOfLines={1}>{item.name}</Text>
-            <Text style={styles.listItemDescription} numberOfLines={2}>{item.description}</Text>
           </View>
-            <TouchableOpacity
-                style={styles.saveButtonList}
-                onPress={() => toggleSaveItem(item, 'destination')}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                accessibilityLabel={isItemSaved(item, 'destination') ? `Remove ${item.name} from saved` : `Save ${item.name}`}
-            >
-                <Ionicons
-                    name={isItemSaved(item, 'destination') ? 'bookmark' : 'bookmark-outline'}
-                    size={24}
-                    color={isItemSaved(item, 'destination') ? Colors.light.tint : Colors.white}
-                />
-            </TouchableOpacity>
-        </ImageBackground>
+          
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.8)']}
+            style={styles.gradientOverlay}
+          >
+            <View style={styles.contentContainer}>
+              <Text style={styles.listItemTitle} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Text style={styles.listItemDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+              
+              {item.tags && (
+                <View style={styles.tagsContainer}>
+                  {item.tags.slice(0, 3).map((tag, tagIndex) => (
+                    <View key={tagIndex} style={styles.tag}>
+                      <Text style={styles.tagText}>{tag}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </LinearGradient>
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => toggleSaveItem(item, 'destination')}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons
+              name={isItemSaved(item, 'destination') ? 'bookmark' : 'bookmark-outline'}
+              size={24}
+              color={Colors.white}
+            />
+          </TouchableOpacity>
+
+          <View style={styles.ratingContainer}>
+            <Ionicons name="star" size={16} color="#FFD700" />
+            <Text style={styles.ratingText}>{item.rating.toFixed(1)}</Text>
+          </View>
+        </View>
       </AnimatedCard>
     </Animated.View>
   ), [navigation, styles, isDarkMode, isItemSaved, toggleSaveItem]);
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={isDarkMode ? Colors.dark.tint : Colors.light.tint} />
+        <Text style={styles.loadingText}>Discovering amazing places...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screenContainer}>
@@ -285,36 +364,36 @@ function DestinationsScreen() {
         barStyle={isDarkMode ? 'light-content' : 'dark-content'}
         backgroundColor={styles.screenContainer.backgroundColor}
       />
-      {isLoading ? (
-           <View style={styles.loadingContainer}>
-               <ActivityIndicator size="large" color={styles.loadingText.color} />
-               <Text style={styles.loadingText}>Loading Destinations...</Text>
-           </View>
-      ) : error ? (
-           <View style={styles.emptyListContainer}>
-                <Ionicons name="warning-outline" size={60} color={styles.secondaryText.color} />
-               <Text style={styles.emptyListText}>{error}</Text>
-           </View>
-      ) : (
-           <FlatList
-             data={destinationsData}
-             keyExtractor={(item) => `list-dest-${item.id}`}
-             renderItem={renderDestinationItem}
-             contentContainerStyle={styles.listContainer}
-             showsVerticalScrollIndicator={false}
-             ListEmptyComponent={() => (
-                 destinationsData.length === 0 ? (
-                     <View style={styles.emptyListContainer}>
-                          <Ionicons name="planet-outline" size={60} color={styles.secondaryText.color} />
-                         <Text style={styles.emptyListText}>No destinations found.</Text>
-                     </View>
-                 ) : null
-             )}
-           />
-      )}
+      
+      <FlatList
+        data={destinationsData}
+        renderItem={renderDestinationItem}
+        keyExtractor={(item) => `destination-${item.id}`}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={isDarkMode ? Colors.dark.tint : Colors.light.tint}
+            colors={[isDarkMode ? Colors.dark.tint : Colors.light.tint]}
+          />
+        }
+        ListEmptyComponent={() => (
+          <View style={styles.emptyContainer}>
+            <Ionicons 
+              name={error ? "alert-circle-outline" : "compass-outline"} 
+              size={64} 
+              color={isDarkMode ? Colors.dark.secondary : Colors.light.secondary} 
+            />
+            <Text style={styles.emptyText}>
+              {error || "No destinations found"}
+            </Text>
+          </View>
+        )}
+      />
     </View>
   );
 }
-
 
 export default DestinationsScreen;

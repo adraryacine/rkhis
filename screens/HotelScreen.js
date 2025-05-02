@@ -142,6 +142,7 @@ const getThemedStyles = (isDarkMode = false) => {
     ratingContainer: {
       flexDirection: 'row',
       alignItems: 'center',
+      marginTop: 4,
     },
     ratingStars: {
       flexDirection: 'row',
@@ -154,8 +155,8 @@ const getThemedStyles = (isDarkMode = false) => {
     },
     amenitiesContainer: {
       flexDirection: 'row',
-      marginTop: 8,
       flexWrap: 'wrap',
+      marginTop: 8,
     },
     amenityBadge: {
       flexDirection: 'row',
@@ -189,6 +190,11 @@ const getThemedStyles = (isDarkMode = false) => {
       justifyContent: 'center',
       alignItems: 'center',
     },
+    address: {
+      color: colors.secondary,
+      fontSize: 14,
+      marginTop: 4,
+    },
   });
 };
 
@@ -209,7 +215,6 @@ function HotelScreen() {
     const loadHotels = async () => {
       try {
         const data = await getRecommendedHotels();
-        console.log('Fetched hotels:', data);
         setHotels(data);
         setFilteredHotels(data);
       } catch (err) {
@@ -246,6 +251,9 @@ function HotelScreen() {
       'Beachfront': 'beach-outline',
       'Private Beach': 'umbrella-outline',
       'Tennis': 'tennisball-outline',
+      'Business Center': 'business-outline',
+      'City Center': 'location-outline',
+      'Sea View': 'eye-outline',
     };
     return amenityIcons[amenity] || 'ellipse-outline';
   };
@@ -266,7 +274,7 @@ function HotelScreen() {
         <Image
           source={{ 
             uri: imageErrors[item.id] 
-              ? 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Hotel'
+              ? 'https://images.unsplash.com/photo-1566073771259-6a8506099945'
               : item.image 
           }}
           style={styles.hotelImage}
@@ -293,12 +301,13 @@ function HotelScreen() {
           </View>
           <View style={styles.ratingContainer}>
             <View style={styles.ratingStars}>
-              {Array(Math.floor(item.rating)).fill(null).map((_, i) => (
+              {Array(Math.floor(parseFloat(item.rating || 0))).fill(null).map((_, i) => (
                 <Ionicons key={i} name="star" size={16} color={Colors[isDarkMode ? 'dark' : 'light'].success} />
               ))}
             </View>
             <Text style={styles.rating}>{item.rating}</Text>
           </View>
+          <Text style={styles.address}>{item.address}</Text>
           <View style={styles.amenitiesContainer}>
             {item.amenities?.slice(0, 3).map((amenity, index) => (
               <View key={index} style={styles.amenityBadge}>
@@ -325,11 +334,11 @@ function HotelScreen() {
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
-          <Ionicons 
-            name="search" 
-            size={22} 
-            color={Colors[isDarkMode ? 'dark' : 'light'].placeholder} 
-            style={styles.searchIcon} 
+          <Ionicons
+            name="search"
+            size={22}
+            color={Colors[isDarkMode ? 'dark' : 'light'].placeholder}
+            style={styles.searchIcon}
           />
           <TextInput
             style={styles.searchInput}

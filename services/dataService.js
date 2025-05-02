@@ -341,12 +341,13 @@ const getRecommendedHotels = async () => {
         querySnapshot.forEach((doc) => {
             if (doc.exists()) {
                 const data = doc.data();
+                console.log('Hotel document data:', data);
                 hotels.push({
                     id: doc.id,
                     name: data.name || 'Unknown Hotel',
-                    rating: data.rating || 4.0,
-                    price: data.price || '~$100',
-                    image: data.image || data.images?.[0] || 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Hotel',
+                    rating: parseFloat(data.rating) || 4.0,
+                    price: data.price || '$100/night',
+                    image: data.image || data.images?.[0] || 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
                     amenities: data.amenities || ['Free WiFi'],
                     address: data.address || data.location?.address || 'Bejaia',
                     description: data.description || '',
@@ -361,12 +362,93 @@ const getRecommendedHotels = async () => {
         });
 
         if (hotels.length === 0) {
-            console.log('No hotels found in Firestore, returning mock data');
-            return mockData.recommendedHotels;
+            console.log('No hotels found in Firestore, seeding initial data...');
+            // Seed initial hotel data
+            const initialHotels = [
+                {
+                    id: 'hotel_1',
+                    name: 'La roserie',
+                    rating: '4.9',
+                    price: '$235/night',
+                    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+                    amenities: ['Pool', 'Spa', 'Restaurant', 'Free WiFi', 'Sea View'],
+                    address: 'Rue Aissat Idir, Bejaia',
+                    description: 'Luxury hotel with stunning sea views and modern amenities.',
+                    location: {
+                        latitude: 36.71302,
+                        longitude: 5.03138
+                    }
+                },
+                {
+                    id: 'hotel_2',
+                    name: 'Hotel 10',
+                    rating: '4.8',
+                    price: '$147/night',
+                    image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa',
+                    amenities: ['Restaurant', 'Free WiFi', 'City Center', 'Business Center'],
+                    address: 'Downtown Bejaia',
+                    description: 'Modern business hotel in the heart of the city.',
+                    location: {
+                        latitude: 36.79126,
+                        longitude: 5.00830
+                    }
+                },
+                {
+                    id: 'hotel_3',
+                    name: 'Hotel 2',
+                    rating: '4.7',
+                    price: '$112/night',
+                    image: 'https://images.unsplash.com/photo-1564501049412-61c2a3083791',
+                    amenities: ['Beachfront', 'Restaurant', 'Free WiFi', 'Pool'],
+                    address: 'Corniche, Bejaia',
+                    description: 'Beachfront hotel with excellent amenities.',
+                    location: {
+                        latitude: 36.79128,
+                        longitude: 5.05352
+                    }
+                },
+                {
+                    id: 'hotel_4',
+                    name: 'Hotel 3',
+                    rating: '4.6',
+                    price: '$92/night',
+                    image: 'https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9',
+                    amenities: ['Private Beach', 'Pool', 'Restaurant'],
+                    address: 'Tichy Beach, Bejaia',
+                    description: 'Affordable beachfront hotel with great views.',
+                    location: {
+                        latitude: 36.73428,
+                        longitude: 5.02874
+                    }
+                },
+                {
+                    id: 'hotel_5',
+                    name: 'Hotel 4',
+                    rating: '4.5',
+                    price: '$163/night',
+                    image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945',
+                    amenities: ['Spa', 'Pool', 'Restaurant', 'Free WiFi'],
+                    address: 'City Center, Bejaia',
+                    description: 'Elegant city hotel with premium amenities.',
+                    location: {
+                        latitude: 36.76319,
+                        longitude: 5.01086
+                    }
+                }
+            ];
+
+            // Add hotels to Firestore
+            for (const hotel of initialHotels) {
+                const docRef = doc(db, 'hotels', hotel.id);
+                await setDoc(docRef, hotel);
+                hotels.push(hotel);
+            }
+            console.log('Successfully seeded initial hotel data');
         }
 
         console.log('Final hotels array:', hotels);
         return hotels;
+
     } catch (error) {
         console.error('Error fetching hotels:', error);
         return mockData.recommendedHotels;
