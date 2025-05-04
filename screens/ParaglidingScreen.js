@@ -41,18 +41,18 @@ const Colors = {
 const paraglidingSpots = [
   {
     id: '1',
-    name: 'Yemma Gouraya',
+    name: 'AOKAS YEMMATADRART',
     description: 'A popular takeoff point with stunning views of the city and sea.',
-    image: 'https://picsum.photos/seed/gouraya/800/600',
-    height: '660m',
+    image: 'https://pbs.twimg.com/media/EIEbTYUX4AIzGha.jpg:large',
+    height: '360m',
     duration: '15-30 min',
     difficulty: 'Intermediate',
   },
   {
     id: '2',
-    name: 'Cap Carbon',
+    name: 'MELBOU ',
     description: 'Coastal flying site with thermals and sea breeze.',
-    image: 'https://picsum.photos/seed/capcarbon/800/600',
+    image: 'https://i.ytimg.com/vi/1iesa-eyk8c/hqdefault.jpg',
     height: '220m',
     duration: '10-20 min',
     difficulty: 'Beginner',
@@ -61,7 +61,7 @@ const paraglidingSpots = [
     id: '3',
     name: 'Toudja',
     description: 'Mountain site with strong thermals and long flights possible.',
-    image: 'https://picsum.photos/seed/toudja/800/600',
+    image: 'https://www.jeune-independant.net/wp-content/uploads/2020/08/arton15932.jpg',
     height: '800m',
     duration: '30-60 min',
     difficulty: 'Advanced',
@@ -120,7 +120,7 @@ export default function ParaglidingScreen() {
       />
       
       <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>Paragliding in Bejaia</Text>
+        <Text style={[styles.title, { color: colors.text }]}>Parapente in Bejaia</Text>
         <Text style={[styles.subtitle, { color: colors.secondary }]}>
           Experience the thrill of flying over Bejaia's beautiful landscapes
         </Text>

@@ -26,25 +26,15 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 // --- MOCK DATA (Temporary/Fallback) ---
 // Keep mock data structured as it's used in the fetching fallbacks
 const mockData = {
-    featuredDestinations: [
-      { id: 'dest1', name: 'Bejaia City Exploration', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg/1280px-Port_de_B%C3%A9ja%C3%AFa_-_Alg%C3%A9rie.jpg', description: 'Historic port & vibrant center' },
-      { id: 'dest2', name: 'Aokas Golden Sands', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Plage_d%27Aokas.jpg/1280px-Plage_d%27Aokas.jpg', description: 'Relax on the stunning coastline' },
-      { id: 'dest3', name: 'Tichy Seaside Promenade', image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/09/29/25/63/hotel-les-hammadites.jpg?w=1200&h=-1&s=1', description: 'Enjoy cafes and sea views' },
-      { id: 'dest4', name: 'Majestic Cap Carbon', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/07/Phare_du_Cap_Carbon.jpg/1024px-Phare_du_Cap_Carbon.jpg', description: 'Iconic lighthouse & panoramas' },
-    ],
-    upcomingEvents: [
-      { id: 'event1', name: 'Festival International de Théâtre', date: 'Oct 2024', location: 'Theatre Regional', image: 'https://via.placeholder.com/160x110/8A2BE2/FFFFFF?text=Theatre+Fest' },
-      { id: 'event2', name: 'Artisan Fair - Aokas', date: 'Sept 15-17, 2024', location: 'Aokas Corniche', image: 'https://via.placeholder.com/160x110/DEB887/FFFFFF?text=Artisan+Fair' },
-      { id: 'event3', name: 'Andalusian Music Evening', date: 'Sept 22, 2024', location: 'Maison de la Culture', image: 'https://via.placeholder.com/160x110/5F9EA0/FFFFFF?text=Music+Night' },
-      { id: 'event4', name: 'Olive Harvest Celebration', date: 'Nov 2024', location: 'Nearby Villages', image: 'https://via.placeholder.com/160x110/228B22/FFFFFF?text=Olive+Harvest' },
-    ],
+  
+    
      topRatedRestaurants: [
       { 
         id: 'rest1', 
         name: 'Le Dauphin Bleu', 
         rating: 4.8, 
         cuisine: 'Seafood, Mediterranean', 
-        image: 'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg', 
+        image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', 
         priceRange: '$$$',
         description: 'A fine dining experience with fresh seafood and Mediterranean cuisine.',
         location: {
@@ -53,8 +43,8 @@ const mockData = {
           address: 'Port de Bejaia'
         },
         images: [
-          'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/48/le-dauphin-bleu.jpg',
-          'https://media-cdn.tripadvisor.com/media/photo-s/0f/3c/93/49/le-dauphin-bleu.jpg'
+          'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg',
+          'https://i0.wp.com/harba-dz.com/wp-content/uploads/2021/02/le-dauphin-2.jpg?fit=576%2C768&ssl=1'
         ],
         menu: [
           { name: 'Grilled Sea Bass', price: '$25' },
@@ -67,7 +57,7 @@ const mockData = {
       },
       { 
         id: 'rest2', 
-        name: 'Restaurant El Djenina', 
+        name: 'Restaurant La Citadelle', 
         rating: 4.6, 
         cuisine: 'Algerian, Grills', 
         image: 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg', 
@@ -79,9 +69,9 @@ const mockData = {
           address: 'Rue de la Liberté, Bejaia'
         },
         images: [
-          'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg',
-          'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8b/restaurant-el-djenina.jpg'
-        ],
+            'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg',
+            'https://i0.wp.com/harba-dz.com/wp-content/uploads/2021/02/le-dauphin-2.jpg?fit=576%2C768&ssl=1'
+          ],
         menu: [
           { name: 'Couscous Royal', price: '$18' },
           { name: 'Mixed Grill Platter', price: '$22' }
@@ -184,7 +174,7 @@ const mockData = {
       }
     ],
     popularAttractions: [
-      { id: 'attr1', name: 'Gouraya Park', description: 'Nature & Views', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg/1024px-Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%B0.jpg', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD', address: 'Mount Gouraya, Bejaia' },
+      { id: 'attr1', name: 'Gouraya park', description: 'Nature & Views', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%E1%B4%B0.jpg/1024px-Parc_National_de_Gouraya_Bejaia_Alg%C3%A9rie_%E1%B4%B4%B0.jpg', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD', address: 'Mount Gouraya, Bejaia' },
       { id: 'attr2', name: 'Monkey Peak', description: 'Wildlife Encounter', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Barbary_macaque_on_Monkey_Mountain.jpg/1024px-Barbary_macaque_on_Monkey_Mountain.jpg', latitude: 36.7680, longitude: 5.0920, openingHours: 'Always Open', entranceFee: 'Free', address: 'Inside Gouraya Park' },
       { id: 'attr3', name: '1er Novembre Sq.', description: 'City Heart', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Place_du_1er_Novembre_Bejaia.jpg/1024px-Place_du_1er_Novembre_Bejaia.jpg', latitude: 36.7550, longitude: 5.0850, openingHours: 'Always Open', entranceFee: 'Free', address: 'City Center, Bejaia' },
       { id: 'attr4', name: 'Brise de Mer', description: 'City Beach', image: 'https://dynamic-media-cdn.tripadvisor.com/media/photo-o/08/92/d5/83/plage-de-boulimat.jpg?w=1200&h=-1&s=1', latitude: 36.7570, longitude: 5.0800, openingHours: 'Always Open', entranceFee: 'Free', address: 'Waterfront, Bejaia' },

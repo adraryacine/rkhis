@@ -187,7 +187,8 @@ function MainStack() {
             headerTintColor: colors.headerText,
           }}
         />
-        <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
+        <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen}
+         options={{ headerShown: true, title: 'Attraction Details' }} />
 
 
         {/* Settings and Legal Screens - These were already here */}

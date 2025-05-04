@@ -407,7 +407,8 @@ function FavoritesScreen() {
                 params = { 
                     itemId: itemId,
                     item: item,
-                    itemType: 'restaurant'
+                    type: itemType,
+                    restaurantId: itemId
                 }; 
                 break;
             case 'attraction': 

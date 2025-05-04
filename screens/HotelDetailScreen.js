@@ -499,7 +499,7 @@ function HotelDetailScreen() {
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>{hotelDetails?.name}</Text>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>${hotelDetails?.price}</Text>
+              <Text style={styles.price}>{hotelDetails?.price}</Text>
               <Text style={styles.pricePerNight}>/ night</Text>
             </View>
             <View style={styles.ratingContainer}>

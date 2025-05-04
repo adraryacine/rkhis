@@ -100,25 +100,66 @@ export const AuthProvider = ({ children }) => {
 
 // --- Mock Data (Ensure valid icon names) ---
 const initialMockData = {
-  featuredDestinations: [
-    { id: 'dest1', name: 'Bejaia City Exploration', image: 'https://picsum.photos/seed/dest1/600/400', description: 'Historic port & vibrant center', tags: ['city', 'culture'] },
-    { id: 'dest2', name: 'Aokas Golden Sands', image: 'https://picsum.photos/seed/dest2/600/400', description: 'Relax on the stunning coastline' },
-    { id: 'dest3', name: 'Tichy Seaside Town', image: 'https://picsum.photos/seed/dest3/600/400', description: 'Charming coastal town life' },
+  featuredDestinations: [ 
+    { id: 'dest1',name: 'Bejaia City center',
+    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg/2560px-Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg', 
+    description: 'Historic port & vibrant center',
+    tags: ['city', 'culture'],
+    amenities: ['Pool', 'Spa', 'Restaurant'],
+    images: [
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg/2560px-Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg/2560px-Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg',
+      'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg/2560px-Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg',
+    ]
+
+  },
+    { id: 'dest2', name: 'Aokas beach',
+       image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa8xUaR-IbIFutFvnib8by2NxRwIWn_tGtSA&s', 
+       description: 'Relax on the stunning coastline',
+       tags: ['city', 'culture','beach'] ,
+       amenities: ['Pool', 'Spa', 'Restaurant'],
+       images: [
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa8xUaR-IbIFutFvnib8by2NxRwIWn_tGtSA&s',
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa8xUaR-IbIFutFvnib8by2NxRwIWn_tGtSA&s',
+        'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa8xUaR-IbIFutFvnib8by2NxRwIWn_tGtSA&s',
+      ]
+      },
+    { id: 'dest3', name: 'Tichy Seaside Town', 
+      image: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/377373240.jpg?k=ce45f8e76c785e6160ef3d1553325297f205df3585ef3910775d8128827f5675&o=&hp=1', 
+      description: 'Charming coastal town life',
+      tags: ['city', 'culture'],
+      amenities: ['Pool', 'Spa', 'Restaurant'],
+      images: [
+        'https://cf.bstatic.com/xdata/images/hotel/max1024x768/377373240.jpg?k=ce45f8e76c785e6160ef3d1553325297f205df3585ef3910775d8128827f5675&o=&hp=1',
+        'https://cf.bstatic.com/xdata/images/hotel/max1024x768/377373240.jpg?k=ce45f8e76c785e6160ef3d1553325297f205df3585ef3910775d8128827f5675&o=&hp=1',
+        'https://cf.bstatic.com/xdata/images/hotel/max1024x768/377373240.jpg?k=ce45f8e76c785e6160ef3d1553325297f205df3585ef3910775d8128827f5675&o=&hp=1'
+      ]
+      },
   ],
-  upcomingEvents: [], // Cleared as section is removed
+   
   topRatedRestaurants: [
-    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://picsum.photos/seed/rest1/600/400', priceRange: '$$$' },
+    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', priceRange: '$$$' },
     { id: 'rest2', name: 'Restaurant La Citadelle', rating: 4.5, cuisine: 'Algerian, Grill', image: 'https://picsum.photos/seed/rest2/600/400', priceRange: '$$' },
   ],
   recommendedHotels: [
-    { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '~$140', rating: 4.7, image: 'https://picsum.photos/seed/hotel1/600/400', amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860 },
-    { id: 'hotel2', name: 'Les Hammadites Hotel', price: '~$110', rating: 4.3, image: 'https://picsum.photos/seed/hotel2/600/400', amenities: ['Beach Access', 'Restaurant'], latitude: 36.7700, longitude: 5.1400 },
+    { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '6000da - 12000da', rating: 4.7, image: 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 
+    amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860 ,
+    images: ['https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg'], 
+    description: 'Luxury hotel with stunning sea views and modern amenities.'
+  },
+    { id: 'hotel2', name: 'Les Hammadites Hotel', price: '5000da - 11500da', rating: 4.3,
+       image: 'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG',
+        amenities: ['Beach Access', 'Restaurant'], latitude: 36.7700, longitude: 5.1400 ,
+        description: 'Luxury hotel with stunning sea views and modern amenities.',
+        images: ['https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG',
+         'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG', 
+        'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG']}
   ],
   popularAttractions: [
-    { id: 'attr1', name: 'Gouraya Park', description: 'Nature & Views', image: 'https://picsum.photos/seed/attr1/400/400', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD' },
-    { id: 'attr2', name: 'Cap Carbon Lighthouse', description: 'Panoramic Coastal Views', image: 'https://picsum.photos/seed/attr2/400/400', latitude: 36.785, longitude: 5.105 },
-    { id: 'attr3', name: 'Place Guidon', description: 'City Center Square', image: 'https://picsum.photos/seed/attr3/400/400', latitude: 36.753, longitude: 5.083 },
-    { id: 'attr4', name: 'Monkey Peak (Pic des Singes)', description: 'Hiking & Wildlife Spotting', image: 'https://picsum.photos/seed/attr4/400/400', latitude: 36.765, longitude: 5.095 },
+    { id: 'attraction_1', name: 'Gouraya Park', description: 'Nature & Views', image: 'https://www.bejaia-guidedepoche.com/images/CouvertureLieu/127/_thumb2/fortgouraya.jpg', latitude: 36.7600, longitude: 5.0900, openingHours: '8 AM - 6 PM', entranceFee: '50 DZD' },
+    { id: 'attraction_2', name: 'Cap Carbon', description: 'Panoramic Coastal Views', image: 'https://dia-algerie.com/wp-content/uploads/2021/03/cap-carbon.jpg', latitude: 36.785, longitude: 5.105 },
+    { id: 'attraction_3', name: 'Place Guidon', description: 'City Center Square', image: 'https://www.bejaia-guidedepoche.com/images/CouvertureLieu/206/place-guidon-5.jpg', latitude: 36.753, longitude: 5.083 },
+    { id: 'attraction_4', name: 'Monkey Peak (Pic des Singes)', description: 'Hiking & Wildlife Spotting', image: 'https://www.bejaia-guidedepoche.com/images/CouvertureLieu/145/_thumb2/35fa47a2117d0d3a3615d4735c385cda.jpg', latitude: 36.765, longitude: 5.095 },
   ],
   localCulture: [
     { id: 'cult1', title: 'Kabyle Heritage', description: 'Explore the unique Berber traditions, language (Taqbaylit), and vibrant music of the region.' },
@@ -173,7 +214,7 @@ const CARD_SHADOW = {
 };
 
 // Placeholder Images
-const headerImageUrl = 'https://picsum.photos/seed/bejaia_main_header/1200/800';
+const headerImageUrl = 'https://www.thecasbahpost.com/wp-content/uploads/2017/07/Sam-Semmani-Bejaia.jpg';
 // Fallback image in case others fail
 const fallbackPlaceholderImage = 'https://via.placeholder.com/300x200/cccccc/969696?text=Image+Error';
 
@@ -907,6 +948,9 @@ function HomeScreen() {
                       case 'destination':
                         navigation.navigate('DestinationDetail', navigationParams);
                         break;
+                        case 'hotel':
+                          navigation.navigate('HotelDetail', navigationParams);
+                          break;
                       default:
                         // For any other type, navigate to the appropriate detail screen
                         if (itemType === 'location') {
@@ -1271,11 +1315,7 @@ function HomeScreen() {
         <AnimatedCard
           style={styles.restaurantCard}
           // Pass the full item object to the detail screen
-          onPress={() => navigation.navigate('RestaurantDetail', { 
-            itemId: item.id, 
-            item: item, 
-            itemType: 'restaurant' 
-          })}
+          onPress={() => navigation.navigate('RestaurantDetail', { restaurantId: item.id, item: item, type: 'restaurant' })}
           accessibilityLabel={`View details for ${item.name}, Cuisine: ${item.cuisine}, Price Range: ${item.priceRange}`}
           isDarkMode={isDarkMode}
         >
