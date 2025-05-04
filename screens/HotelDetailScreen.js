@@ -301,74 +301,74 @@ function HotelDetailScreen() {
 
   // Effect to Load Full Hotel Details
   React.useEffect(() => {
-    const fetchDetails = async (id) => {
+      const fetchDetails = async (id) => {
       if (!id) {
-        console.error("HotelDetailScreen: No valid Hotel ID provided for fetching.");
+              console.error("HotelDetailScreen: No valid Hotel ID provided for fetching.");
         setError("Hotel ID is missing or invalid.");
-        setIsLoading(false);
+              setIsLoading(false);
         setHotelDetails(null);
-        return;
-      }
+              return;
+          }
 
-      console.log(`Fetching hotel details for ID: ${id}...`);
+          console.log(`Fetching hotel details for ID: ${id}...`);
       setIsLoading(true);
       setError(null);
 
-      try {
+          try {
         const hotelData = await getHotelDetails(id);
 
-        if (hotelData) {
-          console.log(`Successfully fetched details for hotel ID: ${id}`);
+              if (hotelData) {
+                  console.log(`Successfully fetched details for hotel ID: ${id}`);
           setHotelDetails(hotelData);
-          navigation.setOptions({ title: hotelData.name || 'Hotel Details' });
-          setError(null);
-        } else {
-          console.warn(`Hotel with ID ${id} not found in data service.`);
+                  navigation.setOptions({ title: hotelData.name || 'Hotel Details' });
+                  setError(null);
+              } else {
+                  console.warn(`Hotel with ID ${id} not found in data service.`);
           setError(`Hotel details not found.`);
           setHotelDetails(null);
-        }
-      } catch (err) {
-        console.error(`Error fetching hotel details for ID ${id}:`, err);
+              }
+          } catch (err) {
+              console.error(`Error fetching hotel details for ID ${id}:`, err);
         setError("Failed to load hotel details.");
         setHotelDetails(null);
-      } finally {
+          } finally {
         setIsLoading(false);
-      }
-    };
+          }
+      };
 
     const shouldFetch = currentHotelId && (!hotelDetails || hotelDetails.id !== currentHotelId);
 
-    if (shouldFetch) {
-      fetchDetails(currentHotelId);
+      if (shouldFetch) {
+           fetchDetails(currentHotelId);
     } else if (!currentHotelId) {
-      console.error("HotelDetailScreen: No valid Hotel ID available in params.");
-      setError("Cannot display details: Hotel ID is missing or invalid in navigation parameters.");
-      setIsLoading(false);
-      setHotelDetails(null);
-    } else {
+           console.error("HotelDetailScreen: No valid Hotel ID available in params.");
+           setError("Cannot display details: Hotel ID is missing or invalid in navigation parameters.");
+           setIsLoading(false);
+           setHotelDetails(null);
+      } else {
       console.log(`Using existing data for hotel ID: ${currentHotelId}`);
       setIsLoading(false);
       setError(null);
-      const itemToTitle = hotelDetails || initialItem || initialHotel;
-      if (itemToTitle?.name) {
-        navigation.setOptions({ title: itemToTitle.name });
-      } else {
-        navigation.setOptions({ title: 'Hotel Details' });
+          const itemToTitle = hotelDetails || initialItem || initialHotel;
+          if (itemToTitle?.name) {
+               navigation.setOptions({ title: itemToTitle.name });
+          } else {
+               navigation.setOptions({ title: 'Hotel Details' });
+          }
       }
-    }
   }, [currentHotelId, hotelDetails, initialItem, initialHotel, navigation]);
 
   // Effect to Update Saved Status with better validation
   React.useEffect(() => {
-    const itemForSavedCheck = hotelDetails || initialItem || initialHotel;
+      const itemForSavedCheck = hotelDetails || initialItem || initialHotel;
     
     // Only check saved status if we have a valid item with an ID
     if (itemForSavedCheck && itemForSavedCheck.id) {
       try {
-        setIsSaved(isItemSaved(itemForSavedCheck, type));
+          setIsSaved(isItemSaved(itemForSavedCheck, type));
       } catch (err) {
         console.error("Error checking saved status:", err);
-        setIsSaved(false);
+           setIsSaved(false);
       }
     } else {
       setIsSaved(false);

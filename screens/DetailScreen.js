@@ -1,6 +1,6 @@
 // screens/DetailScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, ActivityIndicator, Image, Alert, FlatList } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -16,6 +16,7 @@ import {
 
 // --- LOCAL Re-definition of ALL Constants and Styles needed for THIS screen ---
 const SPACING = 16;
+const SCREEN_WIDTH = 375; // Assuming a default screen width
 // Include any other constants specific to THIS screen
 const Colors = {
   light: {
@@ -146,8 +147,17 @@ const getThemedStyles = (isDarkMode = false) => {
          },
         secondaryText: {
             color: colors.secondary,
-        }
-
+        },
+        imageGallery: {
+            marginBottom: SPACING,
+        },
+        galleryImage: {
+            width: SCREEN_WIDTH * 0.8,
+            height: SCREEN_WIDTH * 0.6,
+            borderRadius: 16,
+            marginRight: SPACING,
+            backgroundColor: colors.secondary,
+        },
     });
 }
 
@@ -264,19 +274,42 @@ function DetailScreen() {
          );
     }
 
+   const handleImageError = (index) => {
+    if (detailData.images && detailData.images[index]) {
+      // Replace the failed image with a fallback
+      const updatedImages = [...detailData.images];
+      updatedImages[index] = fallbackPlaceholderImage;
+      setDetailData({ ...detailData, images: updatedImages });
+    }
+  };
+
    // --- Render the actual detail UI based on itemType and detailData ---
    // This part needs customization based on the structure of your data for each type
    // Here's a basic example, you'll need to expand this significantly
    return (
        <SafeAreaView style={styles.screenContainer}>
            <ScrollView contentContainerStyle={styles.contentContainer}>
-                <Image
-                    source={{ uri: detailData.image || fallbackPlaceholderImage }}
-                    style={styles.image}
-                    resizeMode="cover"
-                     onError={(e) => console.log("Image error:", e.nativeEvent.error)}
-                />
-               <Text style={styles.title}>{detailData.name || detailData.title || 'Unknown Item'}</Text>
+                {/* Image Gallery */}
+                {detailData.images && detailData.images.length > 0 && (
+                    <View style={styles.imageGallery}>
+                        <FlatList
+                            data={detailData.images}
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item, index }) => (
+                                <Image
+                                    source={{ uri: item }}
+                                    style={styles.galleryImage}
+                                    resizeMode="cover"
+                                    onError={() => handleImageError(index)}
+                                />
+                            )}
+                        />
+                    </View>
+                )}
+
+                <Text style={styles.title}>{detailData.name || detailData.title || 'Unknown Item'}</Text>
 
                 {/* Render sections based on itemType and available data */}
                 {itemType === 'destination' && detailData.description && (

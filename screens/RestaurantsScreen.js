@@ -88,12 +88,12 @@ const getThemedStyles = (isDarkMode = false) => {
       color: colors.text,
     },
     listContainer: {
-      padding: SPACING,
+        padding: SPACING,
     },
     restaurantCard: {
       backgroundColor: colors.cardBackground,
       borderRadius: 25,
-      marginBottom: SPACING,
+         marginBottom: SPACING,
       overflow: 'hidden',
       ...Platform.select({
         ios: {
@@ -108,7 +108,7 @@ const getThemedStyles = (isDarkMode = false) => {
       }),
     },
     restaurantImage: {
-      width: '100%',
+        width: '100%',
       height: 180,
       backgroundColor: '#8895a7',
     },
@@ -125,9 +125,9 @@ const getThemedStyles = (isDarkMode = false) => {
     name: {
       fontSize: 22,
       fontWeight: '700',
-      color: colors.text,
+        color: colors.text,
       flex: 1,
-    },
+     },
     priceContainer: {
       backgroundColor: colors.success,
       paddingHorizontal: 12,
@@ -140,14 +140,14 @@ const getThemedStyles = (isDarkMode = false) => {
       fontWeight: '600',
       fontSize: 16,
     },
-    ratingContainer: {
-      flexDirection: 'row',
-      alignItems: 'center',
+     ratingContainer: {
+       flexDirection: 'row',
+       alignItems: 'center',
     },
     ratingStars: {
       flexDirection: 'row',
       marginRight: 4,
-    },
+     },
     rating: {
       fontSize: 18,
       color: colors.success,
@@ -161,14 +161,34 @@ const getThemedStyles = (isDarkMode = false) => {
       borderRadius: 20,
       width: 40,
       height: 40,
-      justifyContent: 'center',
-      alignItems: 'center',
+        justifyContent: 'center',
+        alignItems: 'center',
       zIndex: 1,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
+     },
+     loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+    cuisineContainer: {
+      flexDirection: 'row',
       alignItems: 'center',
+      marginTop: SPACING / 2,
+    },
+    cuisine: {
+      fontSize: 14,
+      color: colors.secondary,
+      marginLeft: SPACING / 2,
+    },
+    hoursContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: SPACING / 2,
+    },
+    hours: {
+      fontSize: 14,
+      color: colors.secondary,
+      marginLeft: SPACING / 2,
     },
   });
 };
@@ -226,16 +246,15 @@ function RestaurantsScreen() {
       <TouchableOpacity
         activeOpacity={0.95}
         onPress={() => navigation.navigate('RestaurantDetail', { 
-          itemId: item.id,
-          item: item,
-          itemType: 'restaurant'
+          restaurantId: item.id,
+          itemData: item
         })}
       >
         <Image
           source={{ 
             uri: imageErrors[item.id] 
               ? 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Restaurant'
-              : item.image 
+              : item.images?.[0] || item.image || 'https://via.placeholder.com/600x400/8895a7/ffffff?text=Restaurant'
           }}
           style={styles.restaurantImage}
           resizeMode="cover"
@@ -267,6 +286,18 @@ function RestaurantsScreen() {
             </View>
             <Text style={styles.rating}>{item.rating}</Text>
           </View>
+          {item.cuisine && (
+            <View style={styles.cuisineContainer}>
+              <Ionicons name="restaurant-outline" size={16} color={Colors[isDarkMode ? 'dark' : 'light'].secondary} />
+              <Text style={styles.cuisine}>{item.cuisine}</Text>
+            </View>
+          )}
+          {item.openingHours && (
+            <View style={styles.hoursContainer}>
+              <Ionicons name="time-outline" size={16} color={Colors[isDarkMode ? 'dark' : 'light'].secondary} />
+              <Text style={styles.hours}>{item.openingHours}</Text>
+            </View>
+          )}
         </View>
       </TouchableOpacity>
     </Animated.View>
@@ -298,15 +329,15 @@ function RestaurantsScreen() {
             value={searchQuery}
             onChangeText={setSearchQuery}
           />
-        </View>
-      </View>
-      <FlatList
+           </View>
+           </View>
+           <FlatList
         data={filteredRestaurants}
-        renderItem={renderRestaurantItem}
+             renderItem={renderRestaurantItem}
         keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+             contentContainerStyle={styles.listContainer}
+             showsVerticalScrollIndicator={false}
+           />
     </View>
   );
 }

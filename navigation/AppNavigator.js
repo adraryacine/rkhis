@@ -55,6 +55,7 @@ import AttractionDetailScreen from '../screens/AttractionDetailScreen';
 // You might have one generic DetailScreen or specific ones
 import DetailScreen from '../screens/DetailScreen'; // Assuming a generic one for others
 import DestinationDetailScreen from '../screens/DestinationDetailScreen';
+import RestaurantDetailScreen from '../screens/RestaurantDetailScreen';
 
 
 // Define Navigators
@@ -174,7 +175,18 @@ function MainStack() {
             }
           }} 
         />
-        <Stack.Screen name="RestaurantDetail" component={DetailScreen} options={{ headerShown: true, title: 'Restaurant Details' }} />
+        <Stack.Screen 
+          name="RestaurantDetail" 
+          component={RestaurantDetailScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Restaurant Details',
+            headerStyle: {
+              backgroundColor: colors.headerBackground,
+            },
+            headerTintColor: colors.headerText,
+          }}
+        />
         <Stack.Screen name="AttractionDetail" component={AttractionDetailScreen} options={{ headerShown: true, title: 'Attraction Details' }} />
 
 

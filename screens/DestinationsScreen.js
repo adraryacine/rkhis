@@ -74,8 +74,8 @@ const getThemedStyles = (isDarkMode = false) => {
       backgroundColor: colors.background,
     },
     listContainer: {
-      padding: SPACING,
-      paddingTop: SPACING * 2,
+        padding: SPACING,
+        paddingTop: SPACING * 2,
     },
     listItemContainer: {
       marginBottom: SPACING * 1.5,
@@ -91,13 +91,13 @@ const getThemedStyles = (isDarkMode = false) => {
     cardBase: {
       height: CARD_HEIGHT,
       borderRadius: 16,
-      overflow: 'hidden',
+        overflow: 'hidden',
     },
     imageContainer: {
       flex: 1,
       backgroundColor: colors.border,
     },
-    listItemImage: {
+     listItemImage: {
       width: '100%',
       height: '100%',
     },
@@ -107,29 +107,29 @@ const getThemedStyles = (isDarkMode = false) => {
       left: 0,
       right: 0,
       height: CARD_HEIGHT,
-      justifyContent: 'flex-end',
-      padding: SPACING,
-    },
+          justifyContent: 'flex-end',
+         padding: SPACING,
+     },
     contentContainer: {
       marginTop: 'auto',
     },
-    listItemTitle: {
+     listItemTitle: {
       fontSize: 24,
-      fontWeight: '700',
-      color: Colors.white,
+         fontWeight: '700',
+         color: Colors.white,
       marginBottom: 4,
       textShadowColor: 'rgba(0, 0, 0, 0.75)',
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
-    },
-    listItemDescription: {
+     },
+      listItemDescription: {
       fontSize: 16,
-      color: Colors.white,
-      opacity: 0.9,
+         color: Colors.white,
+         opacity: 0.9,
       textShadowColor: 'rgba(0, 0, 0, 0.75)',
       textShadowOffset: { width: 0, height: 1 },
       textShadowRadius: 4,
-    },
+     },
     tagsContainer: {
       flexDirection: 'row',
       flexWrap: 'wrap',
@@ -161,7 +161,7 @@ const getThemedStyles = (isDarkMode = false) => {
       zIndex: 1,
     },
     ratingContainer: {
-      position: 'absolute',
+        position: 'absolute',
       top: SPACING,
       left: SPACING,
       flexDirection: 'row',
@@ -178,28 +178,28 @@ const getThemedStyles = (isDarkMode = false) => {
       marginLeft: 4,
     },
     emptyContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: SPACING * 2,
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: SPACING * 2,
     },
     emptyText: {
       fontSize: 18,
-      color: colors.secondary,
-      textAlign: 'center',
+        color: colors.secondary,
+        textAlign: 'center',
       marginTop: SPACING,
-    },
-    loadingContainer: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    loadingText: {
-      marginTop: SPACING,
-      fontSize: 16,
-      color: colors.tint,
-      fontWeight: '600',
-    },
+     },
+     loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+     },
+      loadingText: {
+         marginTop: SPACING,
+         fontSize: 16,
+         color: colors.tint,
+         fontWeight: '600',
+      },
   });
 };
 
@@ -223,16 +223,16 @@ const AnimatedCard = React.memo(({ children, onPress, isDarkMode }) => {
   };
 
   return (
-    <Pressable
-      onPress={onPress}
+        <Pressable
+            onPress={onPress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={{ flex: 1 }}
-    >
+            style={{ flex: 1 }}
+        >
       <Animated.View style={[{ flex: 1 }, animatedStyle]}>
-        {children}
-      </Animated.View>
-    </Pressable>
+                 {children}
+            </Animated.View>
+        </Pressable>
   );
 });
 
@@ -252,30 +252,30 @@ function DestinationsScreen() {
     if (showRefreshing) {
       setIsRefreshing(true);
     } else {
-      setIsLoading(true);
+          setIsLoading(true);
     }
-    setError(null);
+          setError(null);
 
-    try {
+          try {
       const data = await getFeaturedDestinations();
       if (data && data.length > 0) {
-        setDestinationsData(data);
+              setDestinationsData(data);
       } else {
         setError("No destinations available at the moment.");
         setDestinationsData([]);
       }
-    } catch (err) {
-      console.error("Error loading destinations:", err);
+          } catch (err) {
+              console.error("Error loading destinations:", err);
       setError("Unable to load destinations. Please try again.");
-      setDestinationsData([]);
-    } finally {
-      setIsLoading(false);
+              setDestinationsData([]);
+          } finally {
+              setIsLoading(false);
       setIsRefreshing(false);
-    }
-  };
+          }
+      };
 
   useEffect(() => {
-    loadData();
+      loadData();
   }, []);
 
   const handleRefresh = () => {
@@ -299,8 +299,8 @@ function DestinationsScreen() {
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: item.image }}
-              style={styles.listItemImage}
-              resizeMode="cover"
+          style={styles.listItemImage}
+          resizeMode="cover"
             />
           </View>
           
@@ -328,17 +328,17 @@ function DestinationsScreen() {
             </View>
           </LinearGradient>
 
-          <TouchableOpacity
+            <TouchableOpacity
             style={styles.saveButton}
-            onPress={() => toggleSaveItem(item, 'destination')}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons
-              name={isItemSaved(item, 'destination') ? 'bookmark' : 'bookmark-outline'}
-              size={24}
+                onPress={() => toggleSaveItem(item, 'destination')}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+                <Ionicons
+                    name={isItemSaved(item, 'destination') ? 'bookmark' : 'bookmark-outline'}
+                    size={24}
               color={Colors.white}
-            />
-          </TouchableOpacity>
+                />
+            </TouchableOpacity>
 
           <View style={styles.ratingContainer}>
             <Ionicons name="star" size={16} color="#FFD700" />
@@ -365,12 +365,12 @@ function DestinationsScreen() {
         backgroundColor={styles.screenContainer.backgroundColor}
       />
       
-      <FlatList
-        data={destinationsData}
-        renderItem={renderDestinationItem}
+           <FlatList
+             data={destinationsData}
+             renderItem={renderDestinationItem}
         keyExtractor={(item) => `destination-${item.id}`}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
+             contentContainerStyle={styles.listContainer}
+             showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -379,7 +379,7 @@ function DestinationsScreen() {
             colors={[isDarkMode ? Colors.dark.tint : Colors.light.tint]}
           />
         }
-        ListEmptyComponent={() => (
+             ListEmptyComponent={() => (
           <View style={styles.emptyContainer}>
             <Ionicons 
               name={error ? "alert-circle-outline" : "compass-outline"} 
@@ -389,9 +389,9 @@ function DestinationsScreen() {
             <Text style={styles.emptyText}>
               {error || "No destinations found"}
             </Text>
-          </View>
-        )}
-      />
+                     </View>
+             )}
+           />
     </View>
   );
 }

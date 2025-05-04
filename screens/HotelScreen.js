@@ -262,8 +262,8 @@ function HotelScreen() {
     <Animated.View
       entering={FadeInUp.delay(index * 100)}
       style={styles.hotelCard}
-    >
-      <TouchableOpacity
+      >
+        <TouchableOpacity
         activeOpacity={0.95}
         onPress={() => navigation.navigate('HotelDetail', { 
           itemId: item.id,
@@ -298,8 +298,8 @@ function HotelScreen() {
             <View style={styles.priceContainer}>
               <Text style={styles.price}>{item.price}</Text>
             </View>
-          </View>
-          <View style={styles.ratingContainer}>
+              </View>
+              <View style={styles.ratingContainer}>
             <View style={styles.ratingStars}>
               {Array(Math.floor(parseFloat(item.rating || 0))).fill(null).map((_, i) => (
                 <Ionicons key={i} name="star" size={16} color={Colors[isDarkMode ? 'dark' : 'light'].success} />
@@ -315,10 +315,10 @@ function HotelScreen() {
                 <Text style={styles.amenityText}>{amenity}</Text>
               </View>
             ))}
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-    </Animated.View>
+        </TouchableOpacity>
+      </Animated.View>
   ), [navigation, styles, isItemSaved, toggleSaveItem, isDarkMode, imageErrors, handleImageError]);
 
   if (isLoading) {
@@ -332,7 +332,7 @@ function HotelScreen() {
   return (
     <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <View style={styles.searchContainer}>
+        <View style={styles.searchContainer}>
         <View style={styles.searchBar}>
           <Ionicons
             name="search"

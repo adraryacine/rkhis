@@ -1,8 +1,9 @@
 // screens/AttractionDetailScreen.js
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, ActivityIndicator, Image, Alert, FlatList, TouchableOpacity } from 'react-native';
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { Linking } from 'react-native';
 
 // Import the detail fetching function
 import { getAttractionDetails } from '../services/dataService'; // <--- Import the specific detail fetch function
@@ -119,128 +120,241 @@ const getThemedStyles = (isDarkMode = false) => {
         },
         secondaryText: {
             color: colors.secondary,
-         }
-
+         },
+        imageGallery: {
+            height: 250,
+            marginBottom: SPACING,
+        },
+        galleryImage: {
+            width: 300,
+            height: 250,
+            borderRadius: SPACING,
+            marginRight: SPACING,
+        },
+        mapButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.tint + '20',
+            padding: SPACING,
+            borderRadius: SPACING,
+            marginTop: SPACING / 2,
+        },
+        mapButtonText: {
+            color: colors.tint,
+            marginLeft: SPACING / 2,
+            fontWeight: '600',
+        },
+        websiteButton: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: colors.tint + '20',
+            padding: SPACING,
+            borderRadius: SPACING,
+            marginTop: SPACING / 2,
+        },
+        websiteButtonText: {
+            color: colors.tint,
+            marginLeft: SPACING / 2,
+            fontWeight: '600',
+        },
     });
 }
 
 
 function AttractionDetailScreen() {
   const route = useRoute();
-  const { attractionId } = route.params; // Get the ID from navigation params
+  const { attractionId, itemData } = route.params;
 
   const colorScheme = useColorScheme();
   const isDarkMode = colorScheme === 'dark';
   const styles = getThemedStyles(isDarkMode);
 
-  const [attractionData, setAttractionData] = useState(null);
+  const [detailData, setDetailData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [imageErrors, setImageErrors] = useState({});
+
+  const handleImageError = (index) => {
+    if (detailData.images && detailData.images[index]) {
+      const updatedImages = [...detailData.images];
+      updatedImages[index] = fallbackPlaceholderImage;
+      setDetailData({ ...detailData, images: updatedImages });
+    }
+  };
 
   useEffect(() => {
-      const loadDetail = async () => {
-          setIsLoading(true);
-          setError(null);
-          try {
-              const data = await getAttractionDetails(attractionId); // <--- CALL THE IMPORTED DETAIL FETCH FUNCTION
-               if (data) {
-                 setAttractionData(data);
-              } else {
-                 setError("Attraction not found.");
-                 setAttractionData(null);
-              }
-          } catch (err) {
-              console.error(`Error loading attraction details for ID ${attractionId}:`, err);
-              setError("Failed to load attraction details.");
-              setAttractionData(null);
-               Alert.alert("Error", "Failed to load attraction details data."); // Optionally show alert
-          } finally {
-              setIsLoading(false);
+    const loadAttraction = async () => {
+      setIsLoading(true);
+      setError(null);
+      
+      try {
+        if (itemData) {
+          setDetailData(itemData);
+        } else {
+          const data = await getAttractionDetails(attractionId);
+          if (data) {
+            setDetailData(data);
+          } else {
+            setError("Attraction not found");
+            setDetailData(null);
           }
-      };
-
-      if (attractionId) { // Only fetch if an ID is provided
-         loadDetail();
-      } else {
-          setError("No Attraction ID provided.");
-          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error("Error loading attraction details:", err);
+        setError("Failed to load attraction details");
+        setDetailData(null);
+      } finally {
+        setIsLoading(false);
       }
+    };
 
-  }, [attractionId]); // Re-fetch if attractionId changes
-
-
-    // Render loading, error, or not found state
-   if (isLoading) {
-       return (
-            <View style={[styles.screenContainer, styles.loadingContainer]}>
-                <ActivityIndicator size="large" color={styles.loadingText.color} />
-                <Text style={styles.loadingText}>Loading Attraction Details...</Text>
-            </View>
-       );
-   }
-
-    if (error) {
-        return (
-            <View style={[styles.screenContainer, styles.errorContainer]}>
-                 <Ionicons name="warning-outline" size={60} color={styles.secondaryText.color} />
-                <Text style={styles.errorText}>{error}</Text>
-            </View>
-        );
+    if (attractionId) {
+      loadAttraction();
+    } else if (!itemData) {
+      setError("No attraction ID provided");
+      setIsLoading(false);
     }
+  }, [attractionId, itemData]);
 
-     if (!attractionData) {
-         return (
-              <View style={[styles.screenContainer, styles.errorContainer]}>
-                 <Ionicons name="alert-circle-outline" size={60} color={styles.secondaryText.color} />
-                <Text style={styles.errorText}>Attraction data not available.</Text>
-            </View>
-         );
-    }
+  if (isLoading) {
+    return (
+      <View style={[styles.screenContainer, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color={styles.loadingText.color} />
+        <Text style={styles.loadingText}>Loading Attraction Details...</Text>
+      </View>
+    );
+  }
 
-   // Render the actual detail UI
-   return (
-       <SafeAreaView style={styles.screenContainer}>
-           <ScrollView contentContainerStyle={styles.contentContainer}>
+  if (error) {
+    return (
+      <View style={[styles.screenContainer, styles.errorContainer]}>
+        <Ionicons name="warning-outline" size={60} color={styles.secondaryText.color} />
+        <Text style={styles.errorText}>{error}</Text>
+      </View>
+    );
+  }
+
+  if (!detailData) {
+    return (
+      <View style={[styles.screenContainer, styles.errorContainer]}>
+        <Ionicons name="alert-circle-outline" size={60} color={styles.secondaryText.color} />
+        <Text style={styles.errorText}>Attraction data not available.</Text>
+      </View>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.screenContainer}>
+      <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Image Gallery */}
+        {detailData.images && detailData.images.length > 0 && (
+          <View style={styles.imageGallery}>
+            <FlatList
+              data={detailData.images}
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item, index }) => (
                 <Image
-                    source={{ uri: attractionData.image || fallbackPlaceholderImage }}
-                    style={styles.image}
-                    resizeMode="cover"
-                     onError={(e) => console.log("Image error:", e.nativeEvent.error)} // Add error handling for image
+                  source={{ uri: item }}
+                  style={styles.galleryImage}
+                  resizeMode="cover"
+                  onError={() => handleImageError(index)}
                 />
-               <Text style={styles.title}>{attractionData.name}</Text>
-               {attractionData.description && <Text style={styles.description}>{attractionData.description}</Text>}
+              )}
+            />
+          </View>
+        )}
 
+        <Text style={styles.title}>{detailData.name}</Text>
+        {detailData.description && <Text style={styles.description}>{detailData.description}</Text>}
 
-               {/* Example sections - Add more based on your attraction data fields */}
-               {attractionData.address && (
-                   <>
-                       <Text style={styles.sectionTitle}>Location</Text>
-                       <View style={styles.infoRow}>
-                           <Ionicons name="location-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
-                           <Text style={styles.infoText}>{attractionData.address}</Text>
-                       </View>
-                   </>
-               )}
+        {/* Location Section */}
+        {detailData.address && (
+          <>
+            <Text style={styles.sectionTitle}>Location</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="location-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+              <Text style={styles.infoText}>{detailData.address}</Text>
+            </View>
+            {detailData.coordinates && (
+              <TouchableOpacity
+                style={styles.mapButton}
+                onPress={() => {
+                  const { latitude, longitude } = detailData.coordinates;
+                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+                }}
+              >
+                <Ionicons name="map-outline" size={20} color={styles.tint.color} />
+                <Text style={styles.mapButtonText}>View on Map</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
 
-                {attractionData.openingHours && (
-                     <View style={styles.infoRow}>
-                         <Ionicons name="time-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
-                         <Text style={styles.infoText}>Opening Hours: {attractionData.openingHours}</Text>
-                     </View>
-                )}
+        {/* Opening Hours Section */}
+        {detailData.openingHours && (
+          <>
+            <Text style={styles.sectionTitle}>Opening Hours</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="time-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+              <Text style={styles.infoText}>{detailData.openingHours}</Text>
+            </View>
+          </>
+        )}
 
-                {attractionData.entranceFee !== undefined && attractionData.entranceFee !== null && ( // Check for existence
-                     <View style={styles.infoRow}>
-                         <Ionicons name="pricetag-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
-                         <Text style={styles.infoText}>Entrance Fee: {attractionData.entranceFee === 'Free' ? 'Free' : `${attractionData.entranceFee}`}</Text>
-                     </View>
-                )}
+        {/* Entrance Fee Section */}
+        {detailData.entranceFee !== undefined && detailData.entranceFee !== null && (
+          <>
+            <Text style={styles.sectionTitle}>Entrance Fee</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="pricetag-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+              <Text style={styles.infoText}>
+                {detailData.entranceFee === 'Free' ? 'Free' : `${detailData.entranceFee}`}
+              </Text>
+            </View>
+          </>
+        )}
 
-               {/* Add other sections like photos gallery, related activities, etc. */}
+        {/* Additional Information */}
+        {detailData.additionalInfo && (
+          <>
+            <Text style={styles.sectionTitle}>Additional Information</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="information-circle-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+              <Text style={styles.infoText}>{detailData.additionalInfo}</Text>
+            </View>
+          </>
+        )}
 
-           </ScrollView>
-       </SafeAreaView>
-   );
+        {/* Contact Information */}
+        {detailData.contact && (
+          <>
+            <Text style={styles.sectionTitle}>Contact</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="call-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+              <Text style={styles.infoText}>{detailData.contact.phone}</Text>
+            </View>
+            {detailData.contact.email && (
+              <View style={styles.infoRow}>
+                <Ionicons name="mail-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
+                <Text style={styles.infoText}>{detailData.contact.email}</Text>
+              </View>
+            )}
+            {detailData.contact.website && (
+              <TouchableOpacity
+                style={styles.websiteButton}
+                onPress={() => Linking.openURL(detailData.contact.website)}
+              >
+                <Ionicons name="globe-outline" size={20} color={styles.tint.color} />
+                <Text style={styles.websiteButtonText}>Visit Website</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 
