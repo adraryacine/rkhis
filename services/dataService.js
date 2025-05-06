@@ -295,9 +295,13 @@ const getTopRatedRestaurants = async () => {
             if (doc.exists()) {
                 const data = doc.data();
                 console.log('Restaurant document data:', data);
+                // Ensure rating is a valid number between 0 and 5
+                const rating = parseFloat(data.rating);
+                const validRating = !isNaN(rating) && rating >= 0 && rating <= 5 ? rating : 4.0;
                 restaurants.push({
                     id: doc.id,
-                    ...data
+                    ...data,
+                    rating: validRating
                 });
             }
         });

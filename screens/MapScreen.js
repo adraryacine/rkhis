@@ -78,8 +78,50 @@ const mapMockData = [
     { id: 'hotel3', type: 'hotel', name: 'Hotel Cristal Bejaia', description: 'Rating: 4.1', image: 'https://picsum.photos/seed/hotel_cristal/600/400', latitude: 36.754, longitude: 5.085, tags: ['hotel', 'stay', 'city'] },
     { id: 'beach1', type: 'beach', name: 'Les Aiguades Beach', description: 'Clear waters & cliffs.', image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e3/Les_Aiguades_Bejaia_Algeria.jpg/1024px-Les_Aiguades_Bejaia_Algeria.jpg', latitude: 36.7700, longitude: 5.1400, tags: ['beach', 'nature', 'snorkeling'] },
     { id: 'beach2', type: 'beach', name: 'Sakamody Beach', description: 'Popular spot near the city.', image: 'https://picsum.photos/seed/sakamody_beach/600/400', latitude: 36.7505, longitude: 5.0600, tags: ['beach', 'city', 'restaurant'] },
-    { id: 'rest1', type: 'restaurant', name: 'Le Dauphin Bleu', description: 'Seafood with sea views.', latitude: 36.751, longitude: 5.088, tags: ['restaurant', 'food', 'seafood'] }, // Example coordinates
-    { id: 'rest2', type: 'restaurant', name: 'La Citadelle Restaurant', description: 'Algerian near Casbah.', latitude: 36.7575, longitude: 5.0875, tags: ['restaurant', 'food', 'algerian'] }, // Example coordinates
+    { id: 'rest1', type: 'restaurant', name: 'Le Dauphin Bleu', description: 'Seafood with sea views.', 
+      images: [
+        'https://picsum.photos/seed/le_dauphin_bleu_1/600/400',
+        'https://picsum.photos/seed/le_dauphin_bleu_2/600/400',
+        'https://picsum.photos/seed/le_dauphin_bleu_3/600/400'
+      ],
+      latitude: 36.751, longitude: 5.088, 
+      rating: 4.5,
+      cuisine: 'Seafood',
+      priceRange: '$$$',
+      address: 'Port de Bejaia, Bejaia 06000',
+      openingHours: '11:00 AM - 11:00 PM',
+      contact: {
+        phone: '+213 34 81 23 45',
+        website: 'https://ledauphinbleu.com'
+      },
+      coordinates: {
+        latitude: 36.751,
+        longitude: 5.088
+      },
+      tags: ['restaurant', 'food', 'seafood'] 
+    },
+    { id: 'rest2', type: 'restaurant', name: 'La Citadelle Restaurant', description: 'Algerian near Casbah.', 
+      images: [
+        'https://picsum.photos/seed/la_citadelle_1/600/400',
+        'https://picsum.photos/seed/la_citadelle_2/600/400',
+        'https://picsum.photos/seed/la_citadelle_3/600/400'
+      ],
+      latitude: 36.7575, longitude: 5.0875, 
+      rating: 4.3,
+      cuisine: 'Algerian',
+      priceRange: '$$',
+      address: 'Casbah de Bejaia, Bejaia 06000',
+      openingHours: '12:00 PM - 10:00 PM',
+      contact: {
+        phone: '+213 34 82 34 56',
+        website: 'https://lacitadelle.com'
+      },
+      coordinates: {
+        latitude: 36.7575,
+        longitude: 5.0875
+      },
+      tags: ['restaurant', 'food', 'algerian'] 
+    },
 ].filter(item => typeof item.latitude === 'number' && typeof item.longitude === 'number');
 
 

@@ -178,6 +178,46 @@ const getThemedStyles = (isDarkMode = false) => {
       marginLeft: SPACING / 2,
       fontWeight: '600',
     },
+    quickInfoContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      marginBottom: SPACING,
+      gap: SPACING,
+    },
+    quickInfoItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBackground,
+      paddingHorizontal: SPACING,
+      paddingVertical: SPACING * 0.5,
+      borderRadius: SPACING,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    quickInfoText: {
+      marginLeft: SPACING * 0.5,
+      color: colors.text,
+      fontSize: 14,
+    },
+    contactContainer: {
+      marginTop: SPACING,
+      gap: SPACING * 0.5,
+    },
+    contactButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.cardBackground,
+      padding: SPACING,
+      borderRadius: SPACING,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    contactButtonText: {
+      marginLeft: SPACING * 0.5,
+      color: colors.tint,
+      fontSize: 14,
+      fontWeight: '600',
+    },
   });
 };
 
@@ -292,11 +332,15 @@ function RestaurantDetailScreen() {
         {/* Rating and Price */}
         <View style={styles.ratingContainer}>
           <View style={styles.ratingStars}>
-            {Array(Math.floor(detailData.rating)).fill(null).map((_, i) => (
-              <Ionicons key={i} name="star" size={20} color={styles.rating.color} />
-            ))}
+            {detailData.rating && typeof detailData.rating === 'number' && !isNaN(detailData.rating) && 
+              Array(Math.floor(Math.min(Math.max(detailData.rating, 0), 5))).fill(null).map((_, i) => (
+                <Ionicons key={i} name="star" size={20} color={styles.rating.color} />
+              ))
+            }
           </View>
-          <Text style={styles.rating}>{detailData.rating}</Text>
+          {detailData.rating && typeof detailData.rating === 'number' && !isNaN(detailData.rating) && (
+            <Text style={styles.rating}>{detailData.rating.toFixed(1)}</Text>
+          )}
           {detailData.priceRange && (
             <View style={styles.priceContainer}>
               <Text style={styles.price}>{detailData.priceRange}</Text>
@@ -304,77 +348,58 @@ function RestaurantDetailScreen() {
           )}
         </View>
 
-        {/* Cuisine */}
-        {detailData.cuisine && (
-          <>
-            <Text style={styles.sectionTitle}>Cuisine</Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="restaurant-outline" size={24} color={Colors.light.secondary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>{detailData.cuisine}</Text>
+        {/* Quick Info */}
+        <View style={styles.quickInfoContainer}>
+          {detailData.cuisine && (
+            <View style={styles.quickInfoItem}>
+              <Ionicons name="restaurant-outline" size={20} color={Colors.light.secondary} />
+              <Text style={styles.quickInfoText}>{detailData.cuisine}</Text>
             </View>
-          </>
-        )}
+          )}
+          {detailData.openingHours && (
+            <View style={styles.quickInfoItem}>
+              <Ionicons name="time-outline" size={20} color={Colors.light.secondary} />
+              <Text style={styles.quickInfoText}>{detailData.openingHours}</Text>
+            </View>
+          )}
+        </View>
 
         {/* Location */}
         {detailData.address && (
-          <>
-            <Text style={styles.sectionTitle}>Location</Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={24} color={Colors.light.secondary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>{detailData.address}</Text>
-            </View>
-            {detailData.coordinates && (
-              <TouchableOpacity
-                style={styles.mapButton}
-                onPress={() => {
-                  const { latitude, longitude } = detailData.coordinates;
-                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
-                }}
-              >
-                <Ionicons name="map-outline" size={20} color={Colors.light.tint} />
-                <Text style={styles.mapButtonText}>View on Map</Text>
-              </TouchableOpacity>
-            )}
-          </>
+          <TouchableOpacity
+            style={styles.mapButton}
+            onPress={() => {
+              const { latitude, longitude } = detailData.coordinates;
+              Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
+            }}
+          >
+            <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
+            <Text style={styles.mapButtonText}>{detailData.address}</Text>
+          </TouchableOpacity>
         )}
 
-        {/* Opening Hours */}
-        {detailData.openingHours && (
-          <>
-            <Text style={styles.sectionTitle}>Opening Hours</Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="time-outline" size={24} color={Colors.light.secondary} style={styles.infoIcon} />
-              <Text style={styles.infoText}>{detailData.openingHours}</Text>
-            </View>
-          </>
-        )}
-
-        {/* Contact Information */}
+        {/* Contact */}
         {detailData.contact && (
-          <>
-            <Text style={styles.sectionTitle}>Contact</Text>
+          <View style={styles.contactContainer}>
             {detailData.contact.phone && (
-              <View style={styles.infoRow}>
-                <Ionicons name="call-outline" size={24} color={Colors.light.secondary} style={styles.infoIcon} />
-                <Text style={styles.infoText}>{detailData.contact.phone}</Text>
-              </View>
-            )}
-            {detailData.contact.email && (
-              <View style={styles.infoRow}>
-                <Ionicons name="mail-outline" size={24} color={Colors.light.secondary} style={styles.infoIcon} />
-                <Text style={styles.infoText}>{detailData.contact.email}</Text>
-              </View>
+              <TouchableOpacity
+                style={styles.contactButton}
+                onPress={() => Linking.openURL(`tel:${detailData.contact.phone}`)}
+              >
+                <Ionicons name="call-outline" size={20} color={Colors.light.tint} />
+                <Text style={styles.contactButtonText}>{detailData.contact.phone}</Text>
+              </TouchableOpacity>
             )}
             {detailData.contact.website && (
               <TouchableOpacity
-                style={styles.websiteButton}
+                style={styles.contactButton}
                 onPress={() => Linking.openURL(detailData.contact.website)}
               >
                 <Ionicons name="globe-outline" size={20} color={Colors.light.tint} />
-                <Text style={styles.websiteButtonText}>Visit Website</Text>
+                <Text style={styles.contactButtonText}>Visit Website</Text>
               </TouchableOpacity>
             )}
-          </>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
