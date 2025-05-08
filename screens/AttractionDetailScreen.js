@@ -4,6 +4,8 @@ import { View, Text, StyleSheet, useColorScheme, SafeAreaView, ScrollView, Activ
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Linking } from 'react-native';
+import { useLanguage } from '../contexts/LanguageContext';
+import LocationView from '../components/LocationView';
 
 // Import the detail fetching function
 import { getAttractionDetails } from '../services/dataService'; // <--- Import the specific detail fetch function
@@ -273,22 +275,12 @@ function AttractionDetailScreen() {
         {detailData.address && (
           <>
             <Text style={styles.sectionTitle}>Location</Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="location-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
-              <Text style={styles.infoText}>{detailData.address}</Text>
-            </View>
-            {detailData.coordinates && (
-              <TouchableOpacity
-                style={styles.mapButton}
-                onPress={() => {
-                  const { latitude, longitude } = detailData.coordinates;
-                  Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
-                }}
-              >
-                <Ionicons name="map-outline" size={20} color={styles.tint.color} />
-                <Text style={styles.mapButtonText}>View on Map</Text>
-              </TouchableOpacity>
-            )}
+            <LocationView
+              location={detailData.address || ''}
+              style={styles.mapButton}
+              textStyle={styles.mapButtonText}
+              iconColor={styles.tint?.color || '#007AFF'}
+            />
           </>
         )}
 
@@ -346,7 +338,7 @@ function AttractionDetailScreen() {
                 style={styles.websiteButton}
                 onPress={() => Linking.openURL(detailData.contact.website)}
               >
-                <Ionicons name="globe-outline" size={20} color={styles.tint.color} />
+                <Ionicons name="globe-outline" size={20} />
                 <Text style={styles.websiteButtonText}>Visit Website</Text>
               </TouchableOpacity>
             )}

@@ -31,6 +31,7 @@ const { getHotelDetails } = require('../services/dataService');
 const { addDoc, collection, serverTimestamp } = require('firebase/firestore');
 const { db } = require('../firebase');
 const { useLanguage } = require('../contexts/LanguageContext');
+const LocationView = require('../components/LocationView').default;
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const HEADER_HEIGHT = Platform.OS === 'ios' ? 90 : 70;
@@ -515,16 +516,16 @@ function HotelDetailScreen() {
                   : hotelDetails?.reviews || 0} reviews)
               </Text>
             </View>
-            <TouchableOpacity
-              style={styles.locationContainer}
-              onPress={() => {
-                // Implement location press functionality
+            <LocationView 
+              location={{
+                latitude: hotelDetails?.latitude,
+                longitude: hotelDetails?.longitude,
+                address: hotelDetails?.address
               }}
-            >
-              <Ionicons name="location-outline" size={20} color={colors.accent} />
-              <Text style={styles.locationText}>{hotelDetails?.address || `${hotelDetails?.latitude?.toFixed(5)}, ${hotelDetails?.longitude?.toFixed(5)}`}</Text>
-              <Ionicons name="chevron-forward" size={20} color={colors.secondaryText} />
-            </TouchableOpacity>
+              style={styles.locationContainer}
+              textStyle={styles.locationText}
+              iconColor={colors.accent}
+            />
           </View>
 
           <View style={styles.sectionCard}>

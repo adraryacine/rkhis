@@ -35,7 +35,7 @@ const mockData = {
         rating: 4.8, 
         cuisine: 'Seafood, Mediterranean', 
         image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', 
-        priceRange: '$$$',
+        priceRange: '250da - 500da',
         description: 'A fine dining experience with fresh seafood and Mediterranean cuisine.',
         location: {
           latitude: 36.7538,
@@ -60,22 +60,21 @@ const mockData = {
         name: 'Restaurant La Citadelle', 
         rating: 4.6, 
         cuisine: 'Algerian, Grills', 
+        openingHours: '8h - 23h ',
         image: 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg', 
-        priceRange: '$$',
+        priceRange: '150da - 300da',
         description: 'Traditional Algerian cuisine with a modern twist.',
         location: {
-          latitude: 36.7540,
-          longitude: 5.0570,
+          latitude: 36.763133782642676,
+          longitude: 5.082982942239258,
           address: 'Rue de la Liberté, Bejaia'
         },
         images: [
             'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg',
             'https://i0.wp.com/harba-dz.com/wp-content/uploads/2021/02/le-dauphin-2.jpg?fit=576%2C768&ssl=1'
           ],
-        menu: [
-          { name: 'Couscous Royal', price: '$18' },
-          { name: 'Mixed Grill Platter', price: '$22' }
-        ],
+      
+        
         reviews: [
           { user: 'Ahmed K.', rating: 4.8, comment: 'Authentic Algerian flavors' },
           { user: 'Marie L.', rating: 4.4, comment: 'Delicious food and friendly staff' }
@@ -271,12 +270,6 @@ const getFeaturedDestinations = async () => {
     );
 };
 
-const getUpcomingEvents = async () => {
-    // Example: Order by 'date' and limit
-    return fetchFromFirestore('events', mockData.upcomingEvents,
-        (colRef) => query(colRef, orderBy('date', 'asc'), limit(10)) // Adjust query as needed
-    );
-};
 
 const getTopRatedRestaurants = async () => {
     try {
@@ -728,7 +721,6 @@ export const uploadProfilePicture = async (userId, imageUri, fileName = 'profile
 export {
   // Data Fetching Functions (Firestore first, then Mock fallback)
   getFeaturedDestinations,
-  getUpcomingEvents,
   getTopRatedRestaurants,
   getRecommendedHotels,
   getPopularAttractions,

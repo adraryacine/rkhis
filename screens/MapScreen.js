@@ -22,6 +22,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import LocationView from '../components/LocationView';
 
 // --- Consistent Colors (Matching HomeScreen) ---
 const Colors = {
@@ -388,13 +389,34 @@ function MapScreen() {
   }, [userLocation, locationPermissionGranted, isMapReady, currentRegion]);
 
   const handleCalloutPress = useCallback((marker) => {
-       console.log('Callout Details Tapped:', marker.name);
-       let screenName = 'AttractionDetail'; let params = { attractionId: marker.id };
-       if (marker.type === 'hotel') { screenName = 'HotelDetail'; params = { hotelId: marker.id }; }
-       else if (marker.type === 'restaurant') { screenName = 'RestaurantDetail'; params = { restaurantId: marker.id }; }
-       try { navigation.navigate(screenName, { ...params, itemData: marker }); }
-       catch (e) { console.warn(`Nav Error: ${screenName}`, e); Alert.alert("Navigation Error", `Could not open details.`); }
-   }, [navigation]);
+    console.log('Callout Details Tapped:', marker.name);
+    let screenName = 'AttractionDetail';
+    let params = { 
+        attractionId: marker.id,
+        itemData: marker
+    };
+    
+    if (marker.type === 'hotel') {
+        screenName = 'HotelDetail';
+        params = { 
+            hotelId: marker.id,
+            itemData: marker
+        };
+    } else if (marker.type === 'restaurant') {
+        screenName = 'RestaurantDetail';
+        params = { 
+            restaurantId: marker.id,
+            itemData: marker
+        };
+    }
+    
+    try {
+        navigation.navigate(screenName, params);
+    } catch (e) {
+        console.warn(`Nav Error: ${screenName}`, e);
+        Alert.alert("Navigation Error", `Could not open details.`);
+    }
+}, [navigation]);
 
   const getDirections = useCallback((marker) => {
         if (!marker.latitude || !marker.longitude) { Alert.alert("Location Unavailable"); return; }

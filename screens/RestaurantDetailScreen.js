@@ -15,6 +15,8 @@ import {
 import { useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getRestaurantDetails } from '../services/dataService';
+import { useLanguage } from '../contexts/LanguageContext';
+import LocationView from '../components/LocationView';
 
 const SPACING = 16;
 const Colors = {
@@ -218,6 +220,12 @@ const getThemedStyles = (isDarkMode = false) => {
       fontSize: 14,
       fontWeight: '600',
     },
+    locationContainer: {
+      marginTop: SPACING,
+    },
+    locationText: {
+      color: Colors.light.tint,
+    },
   });
 };
 
@@ -249,11 +257,25 @@ function RestaurantDetailScreen() {
       
       try {
         if (itemData) {
-          setDetailData(itemData);
+          // Ensure images is always an array
+          let images = [];
+          if (Array.isArray(itemData.images) && itemData.images.length > 0) {
+            images = itemData.images;
+          } else if (itemData.image) {
+            images = [itemData.image];
+          }
+          setDetailData({ ...itemData, images });
         } else {
           const data = await getRestaurantDetails(restaurantId);
           if (data) {
-            setDetailData(data);
+            // Ensure images is always an array
+            let images = [];
+            if (Array.isArray(data.images) && data.images.length > 0) {
+              images = data.images;
+            } else if (data.image) {
+              images = [data.image];
+            }
+            setDetailData({ ...data, images });
           } else {
             setError("Restaurant not found");
             setDetailData(null);
@@ -365,17 +387,13 @@ function RestaurantDetailScreen() {
         </View>
 
         {/* Location */}
-        {detailData.address && (
-          <TouchableOpacity
-            style={styles.mapButton}
-            onPress={() => {
-              const { latitude, longitude } = detailData.coordinates;
-              Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`);
-            }}
-          >
-            <Ionicons name="location-outline" size={20} color={Colors.light.tint} />
-            <Text style={styles.mapButtonText}>{detailData.address}</Text>
-          </TouchableOpacity>
+        {detailData.location && (
+          <LocationView
+            location={detailData.location.address || detailData.address || ''}
+            style={styles.locationContainer}
+            textStyle={styles.locationText}
+            iconColor={Colors.light.tint}
+          />
         )}
 
         {/* Contact */}

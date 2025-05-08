@@ -138,8 +138,11 @@ const initialMockData = {
   ],
    
   topRatedRestaurants: [
-    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8, cuisine: 'Seafood, Mediterranean', image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', priceRange: '$$$' },
-    { id: 'rest2', name: 'Restaurant La Citadelle', rating: 4.5, cuisine: 'Algerian, Grill', image: 'https://picsum.photos/seed/rest2/600/400', priceRange: '$$' },
+    { id: 'rest1', name: 'Le Dauphin Bleu', rating: 4.8,
+       cuisine: 'Seafood, Mediterranean', image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', 
+       priceRange: '250da - 500da' },
+    { id: 'rest2', name: 'Restaurant La Citadelle', 
+      rating: 4.5, cuisine: 'Algerian, Grill', image: 'https://picsum.photos/seed/rest2/600/400', priceRange: '150da - 300da' },
   ],
   recommendedHotels: [
     { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '6000da - 12000da', rating: 4.7, image: 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 
