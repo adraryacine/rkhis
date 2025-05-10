@@ -103,7 +103,7 @@ const initialMockData = {
   featuredDestinations: [ 
     { id: 'dest1',name: 'Bejaia City center',
     image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg/2560px-Vue_g%C3%A9n%C3%A9rale_de_la_ville_de_Bejaia.jpg', 
-    description: 'Historic port & vibrant center',
+    description: 'Béjaïa est une ville algérienne située dans la wilaya de Béjaïa, dans la Kabylie. Elle est connue pour son port historique, son centre-ville remarquable et son climat méditerranéen.',
     tags: ['city', 'culture'],
     amenities: ['Pool', 'Spa', 'Restaurant'],
     images: [
@@ -115,7 +115,7 @@ const initialMockData = {
   },
     { id: 'dest2', name: 'Aokas beach',
        image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSa8xUaR-IbIFutFvnib8by2NxRwIWn_tGtSA&s', 
-       description: 'Relax on the stunning coastline',
+       description: 'Aokas est une charmante commune côtière située dans la wilaya de Béjaïa, en Kabylie maritime, à environ 25 km à l\'est de la ville de Béjaïa. Son nom, "Aweqqas" en kabyle, signifie "requin".',
        tags: ['city', 'culture','beach'] ,
        amenities: ['Pool', 'Spa', 'Restaurant'],
        images: [
@@ -126,7 +126,7 @@ const initialMockData = {
       },
     { id: 'dest3', name: 'Tichy Seaside Town', 
       image: 'https://cf.bstatic.com/xdata/images/hotel/max1024x768/377373240.jpg?k=ce45f8e76c785e6160ef3d1553325297f205df3585ef3910775d8128827f5675&o=&hp=1', 
-      description: 'Charming coastal town life',
+      description: 'Tichy est une charmante commune côtière située dans la wilaya de Béjaïa, en Kabylie maritime, à environ 15 km à l\'est de la ville de Béjaïa. Réputée pour ses plages de sable fin et son ambiance estivale animée, elle attire chaque année de nombreux visiteurs en quête de détente et de paysages méditerranéens.  ',
       tags: ['city', 'culture'],
       amenities: ['Pool', 'Spa', 'Restaurant'],
       images: [
@@ -148,12 +148,12 @@ const initialMockData = {
     { id: 'hotel1', name: 'Hotel Royal Bejaia', price: '6000da - 12000da', rating: 4.7, image: 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 
     amenities: ['Pool', 'Spa', 'Restaurant'], latitude: 36.7520, longitude: 5.0860 ,
     images: ['https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg', 'https://hotelroyalbejaia.com/wp-content/uploads/2022/09/IMG_8525.jpg'], 
-    description: 'Luxury hotel with stunning sea views and modern amenities.'
+    description: 'L\'Hôtel Royal Béjaïa est un établissement 3 étoiles situé à proximité du centre-ville de Béjaïa, sur la Route de l’Université Ihaddadene. Il offre un cadre confortable mêlant charme algérien traditionnel et commodités modernes, idéal pour les voyageurs d\'affaires et de loisirs.'
   },
     { id: 'hotel2', name: 'Les Hammadites Hotel', price: '5000da - 11500da', rating: 4.3,
        image: 'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG',
         amenities: ['Beach Access', 'Restaurant'], latitude: 36.7700, longitude: 5.1400 ,
-        description: 'Luxury hotel with stunning sea views and modern amenities.',
+        description: 'L\'Hôtel Les Hammadites est un établissement 3 étoiles situé à proximité du centre-ville de Béjaïa, sur la Route de l’Université Ihaddadene. Il offre un cadre confortable mêlant charme algérien traditionnel et commodités modernes, idéal pour les voyageurs d\'affaires et de loisirs.',
         images: ['https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG',
          'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG', 
         'https://www.clicngo.biz/cr.fwk/images/hotels/Hotel-2737-20210830-101351.JPG']}
