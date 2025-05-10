@@ -36,15 +36,23 @@ const mockData = {
         cuisine: 'Seafood, Mediterranean', 
         image: 'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg', 
         priceRange: '250da - 500da',
-        description: 'A fine dining experience with fresh seafood and Mediterranean cuisine.',
+        description: 'Le Dauphin est un restaurant de fruits de mer situé à Takrietz, dans la commune de Chemini, wilaya de Béjaïa, en Algérie. Il est apprécié pour sa cuisine mettant en avant les produits de la mer et son ambiance conviviale.',
+        openingHours: '10h - 23h',
+        contact: {
+            phone: '+21334xxxxxx',
+            website: 'https://www.tiktok.com/@le_dauphin_restaurant'
+        },
         location: {
+            address :{
           latitude: 36.7538,
           longitude: 5.0569,
-          address: 'Port de Bejaia'
+        },
+      
         },
         images: [
           'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg',
-          'https://i0.wp.com/harba-dz.com/wp-content/uploads/2021/02/le-dauphin-2.jpg?fit=576%2C768&ssl=1'
+          'https://lh3.googleusercontent.com/p/AF1QipM73ffBPOAZvrxyBop1U8lhZMp6qHSIrOBlK73F=w640-h640-n-k-no',
+          'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nqEuCf3Cp-tV7iSuWmpNk_-IhPefDuSqlPdAalwGKcVRC0viyDmXlr58t5tVs-f92Sjri3r2T2Aopw9rOoveyycB5T65NMH1ybljBxyi_TrsqD1ZLEFWEj_NCWrL-ovBCSIwUNx=w408-h306-k-no'
         ],
         menu: [
           { name: 'Grilled Sea Bass', price: '$25' },
@@ -60,17 +68,25 @@ const mockData = {
         name: 'Restaurant La Citadelle', 
         rating: 4.6, 
         cuisine: 'Algerian, Grills', 
-        openingHours: '8h - 23h ',
-        image: 'https://media-cdn.tripadvisor.com/media/photo-s/0a/01/9e/8a/restaurant-el-djenina.jpg', 
+        
+        image: 'https://lh3.googleusercontent.com/p/pAF1QipNxM52_3EspW-hISjnnXFin3WygZ0OBNLxf-jVI=w419-h240-k-no', 
         priceRange: '150da - 300da',
-        description: 'Traditional Algerian cuisine with a modern twist.',
+        description: 'Restaurant La Citadelle est une adresse incontournable à Béjaïa, réputée pour sa cuisine algérienne authentique, notamment ses plats de fruits de mer frais et ses spécialités locales. Situé dans un cadre calme et convivial, l\'établissement offre une expérience culinaire chaleureuse et familiale.',
+        openingHours: '10h - 23h',
+        contact: {
+            phone: '+213553905401',
+            website: 'https://web.facebook.com/p/La-citadelle-100057477167190/?_rdc=1&_rdr#'
+        },
         location: {
+            address :{
           latitude: 36.763133782642676,
           longitude: 5.082982942239258,
-          address: 'Rue de la Liberté, Bejaia'
+        },
+       
         },
         images: [
-            'https://media-cdn.tripadvisor.com/media/photo-m/1280/14/cc/e2/ff/photo1jpg.jpg',
+            'https://lh3.googleusercontent.com/p/AF1QipNxM52_3EspW-hISjnnXFin3WygZ0OBNLxf-jVI=w419-h240-k-no',
+            'https://lh3.googleusercontent.com/p/AF1QipM73ffBPOAZvrxyBop1U8lhZMp6qHSIrOBlK73F=w640-h640-n-k-no',
             'https://i0.wp.com/harba-dz.com/wp-content/uploads/2021/02/le-dauphin-2.jpg?fit=576%2C768&ssl=1'
           ],
       

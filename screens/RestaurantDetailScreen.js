@@ -414,7 +414,7 @@ function RestaurantDetailScreen() {
                 onPress={() => Linking.openURL(detailData.contact.website)}
               >
                 <Ionicons name="globe-outline" size={20} color={Colors.light.tint} />
-                <Text style={styles.contactButtonText}>Visit Website</Text>
+                <Text style={styles.contactButtonText}>Instagram</Text>
               </TouchableOpacity>
             )}
           </View>

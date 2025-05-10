@@ -296,13 +296,13 @@ function AttractionDetailScreen() {
         )}
 
         {/* Entrance Fee Section */}
-        {detailData.entranceFee !== undefined && detailData.entranceFee !== null && (
+        {detailData['entranceFee '] !== undefined && detailData['entranceFee '] !== null && (
           <>
             <Text style={styles.sectionTitle}>Entrance Fee</Text>
             <View style={styles.infoRow}>
               <Ionicons name="pricetag-outline" size={24} color={styles.secondaryText.color} style={styles.infoIcon} />
               <Text style={styles.infoText}>
-                {detailData.entranceFee === 'Free' ? 'Free' : `${detailData.entranceFee}`}
+                {detailData['entranceFee '] === 'Free' ? 'Free' : String(detailData['entranceFee '])}
               </Text>
             </View>
           </>
